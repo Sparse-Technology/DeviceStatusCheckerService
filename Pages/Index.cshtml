@@ -1,0 +1,177 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Device Monitoring";
+}
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top bg-dark">
+    <div class="container-fluid">
+        <div class="fs-3 text-light">Device Monitoring</div>
+
+        <div class="d-flex text-light">
+            <div class="fs-5"><span class="text-success fw-bold">Online: </span>@Model.Devices.Count(d=>d.DeviceActiveStatus == Models.DeviceActiveStatus.ONLINE)</div>
+            <div class="fs-5 ms-4"><span class="text-danger fw-bold">Offline: </span>@Model.Devices.Count(d=>d.DeviceActiveStatus == Models.DeviceActiveStatus.OFFLINE)</div>
+            <div class="fs-5 ms-4"><span class="text-warning fw-bold">Unknown: </span>@Model.Devices.Count(d=>d.DeviceActiveStatus == Models.DeviceActiveStatus.UNKNOWN)</div>
+            <div class="fs-5 ms-4"><span class="text-info fw-bold">Total: </span>@Model.Devices.Count</div>
+        </div>
+
+        <div class="d-flex input-group pt-1" style="max-width: 20%">
+            <span class="input-group-text" id="basic-addon1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+                </svg>
+            </span>
+            <input id="filter_services_input" type="text" class="form-control" placeholder="Search" aria-label="" onkeyup="filterPage()">
+        </div>
+    </div>
+</nav>
+
+<hr />
+<div class="container-fluid" style="font-size: small; padding-top: 2rem">
+    <div class="row gx-2 gy-2">
+        @foreach (var dev in @Model.Devices.OrderBy(d => d.DeviceActiveStatus))
+        {
+            <div class="col-6" data-card="container">
+                <div class="card flex-row" style="position: relative;">
+                    <span style="top: 0px; right: 2px; position: absolute;">@dev.LastCheckTime</span>
+                    <img src='./thumbnails/@(dev.UUID)/stream_0__1.jpeg' class='img-thumbnail card-img-left' style='width:180px !important; height:180px !important;'>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-4 fw-semibold text-muted">#</div>
+                            <div class="col-lg-8">@dev.UUID</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-4 fw-semibold text-muted">IP</div>
+                            <div class="col-lg-8">@dev.IP</div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(dev.Hostname))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Hostname</div>
+                                <div class="col-lg-8">@dev.Hostname</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.FriendlyName))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">FriendlyName</div>
+                                <div class="col-lg-8">@dev.FriendlyName</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.Model))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Model</div>
+                                <div class="col-lg-8">@dev.Model</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.DescriptionLocation))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Description Location</div>
+                                <div class="col-lg-8"><a href="@dev.DescriptionLocation">@dev.DescriptionLocation</a></div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.PresentationURL))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Presentation URL</div>
+                                <div class="col-lg-8"><a href="@dev.PresentationURL">@dev.PresentationURL</a></div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.User))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">User</div>
+                                <div class="col-lg-8">@dev.User</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.Password))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Password</div>
+                                <div class="col-lg-8">@dev.Password</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(dev.Notes))
+                        {
+                            <div class="row">
+                                <div class="col-lg-4 fw-semibold text-muted">Notes</div>
+                                <div class="col-lg-8">
+                                    @(dev.Notes.Contains("discovered", StringComparison.InvariantCultureIgnoreCase) ? Html.Raw("<span class=\"badge bg-success\"><i class=\"bi bi-search\"></i></span> ") : "")
+                                    @(dev.Notes.Contains("static", StringComparison.InvariantCultureIgnoreCase) ? Html.Raw("<span class=\"badge bg-secondary\"><i class=\"bi bi-list\"></i></span> ") : "")
+                                    @dev.Notes
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-lg-4 fw-semibold text-muted">Status</div>
+                            <div class="col-lg-8">
+                                @switch (dev.DeviceActiveStatus)
+                                {
+                                    case Models.DeviceActiveStatus.ONLINE:
+                                        <span class="badge bg-success">Online</span>
+                                        break;
+                                    case Models.DeviceActiveStatus.OFFLINE:
+                                        <span class="badge bg-danger">Offline</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-warning">Unknown</span>
+                                        break;
+                                }
+                            </div>
+                        </div>
+                        @if (dev.Streams.Count > 0)
+                        {
+                            @for (int i = 0; i < dev.Streams.Count; i++)
+                            {
+                                <div class="row">
+                                    <div class="col-lg-4 fw-semibold text-muted">Stream@(i)</div>
+                                    @try
+                                    {
+                                        @switch (dev.Streams[i].Status)
+                                        {
+                                            case Models.StreamStatus.OK:
+                                                <div class="col-lg-8"><a class="badge bg-success" style="white-space: unset !important;" data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:400px !important; height:auto !important;'>">@dev.Streams[i].URI</a></div>
+                                                break;
+                                            case Models.StreamStatus.ERROR:
+                                                <div class="col-lg-8"><a class="badge bg-danger" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
+                                                break;
+                                            default:
+                                                <div class="col-lg-8"><a class="badge bg-warning" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
+                                                break;
+                                        }
+                                    }
+                                    catch { }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip({
+                animated: 'fade',
+                placement: 'bottom',
+                html: true
+            });
+        });
+        function filterPage() {
+            var filter = $('#filter_services_input').val().toLowerCase();
+            if (filter.lenght <= 3 && filter.lenght > 0)
+                return;
+
+            $('[data-card="container"]').filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(filter) > -1)
+            });
+        }
+    </script>
+}
+
+
