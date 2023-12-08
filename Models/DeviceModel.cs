@@ -39,7 +39,7 @@ namespace DeviceStatusCheckerService.Models
         public string Password { get; set; } = "";
         public string DescriptionLocation { get; set; } = "";
         public string PresentationURL { get; set; } = "";
-        public List<StreamSetup> Streams { get; set; } = new List<StreamSetup>();
+
         public DeviceActiveStatus DeviceActiveStatus { get; set; } = DeviceActiveStatus.UNKNOWN;
         public string Notes { get; set; } = "";
         public string LastCheckTime
@@ -49,12 +49,17 @@ namespace DeviceStatusCheckerService.Models
                 return DateTimeOffset.FromUnixTimeMilliseconds(LastCheckTimeMs).ToString("MM/dd/yyyy HH:mm:ss.fff");
             }
         }
+
         public long LastCheckTimeMs { get; set; } = 0;
 
         public DeviceModel? Clone()
         {
+
             var obj = System.Text.Json.JsonSerializer.Serialize(this);
             return System.Text.Json.JsonSerializer.Deserialize<DeviceModel>(obj);
+
         }
+        public List<StreamSetup> Streams { get; set; } = new List<StreamSetup>();
+
     }
 }

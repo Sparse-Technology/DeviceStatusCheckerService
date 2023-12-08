@@ -12,12 +12,19 @@
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
         <PackageReference Include="Onvif.Core" Version="2.2.2" />
         <PackageReference Include="Rssdp" Version="4.0.4" />
+        <PackageReference Include="Scriban" Version="5.9.0" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Update="device_list.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="wwwroot\js\" />
+      <Folder Include="wwwroot\css\" />
+      <Folder Include="wwwroot\lib\" />
     </ItemGroup>
 
 </Project>
