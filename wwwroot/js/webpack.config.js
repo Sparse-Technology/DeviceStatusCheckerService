@@ -1,22 +1,19 @@
-const path = require("path");
+var webpack = require("webpack");
 
 module.exports = {
-  mode: "development",
-  //index.js file for which dependencies should we add into the jsbundle.js
-  entry: "./src/index.js",
-  //Where to create the bundle file
-  output: {
-    filename: "jsbundle.js",
-    path: path.resolve(__dirname, "dist"),
-  },
   module: {
-    //Rule for css loading, first npm install style-loader and css-loader
-    //It gets all the .css related files to include in jsbundle.js
     rules: [
       {
-        test: /\.css$/,
+        test: /\.css$/i,
         use: ["style-loader", "css-loader"],
       },
     ],
   },
+  plugins: [
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery',
+      'window.jQuery': 'jquery',
+    }),
+  ],
 };
