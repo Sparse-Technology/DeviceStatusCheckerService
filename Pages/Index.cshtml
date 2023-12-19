@@ -1,6 +1,8 @@
 ﻿@page
 @using Microsoft.AspNetCore.Hosting
 @using System.Net
+@using System.Web
+
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebHostEnvironment
 
 @* @using DeviceStatusCheckerService.Models.DeviceModel *@
@@ -18,7 +20,7 @@
 
     [data-card="cameraContainer"] {
         width: 100%;
-        box-sizing: border-box; /* Include padding and border in the element's total width */
+        box-sizing: border-box;
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
         background-color: #fff;
         border-radius: 0.5rem;
@@ -34,38 +36,37 @@
         }
 
     .camera-card {
-        width: 100%; /* Set the desired width */
-    }
-
-    .bg-gray {
-        background-color: #6c757d; /* Gray */
+        width: 100%;
     }
 
     .bg-light-gray {
         background-color: #7d8690; /* Light Gray */
     }
 
+    .bg-gray {
+        background-color: #6c757d; /* Gray */
+    }
+
     .bg-dark-gray {
         background-color: #3f4549; /* Dark Gray */
     }
 
-    /* Custom scrollbar styles for the textarea */
     body {
-        overflow-y: scroll; /* Add a vertical scrollbar */
-        scrollbar-width: thin; /* Specify scrollbar width for Firefox */
-        scrollbar-color: #333 #f5f5f5; /* Specify scrollbar colors for Firefox */
+        overflow-y: scroll;
+        scrollbar-width: thin;
+        scrollbar-color: #333 #f5f5f5; 
     }
 
         body::-webkit-scrollbar {
-            width: 8px; /* Specify scrollbar width for Webkit browsers (Chrome, Safari, etc.) */
+            width: 8px; 
         }
 
         body::-webkit-scrollbar-thumb {
-            background-color: #333; /* Specify scrollbar thumb color for Webkit browsers */
+            background-color: #333;
         }
 
         body::-webkit-scrollbar-track {
-            background-color: #f5f5f5; /* Specify scrollbar track color for Webkit browsers */
+            background-color: #f5f5f5; 
         }
 
 </style>
@@ -76,7 +77,9 @@
         <div class="d-flex flex-row align-items-center justify-content-between me-2 ms-2 w-100">
 
             <!-- Brand -->
-            <div class="fs-3 text-light navbar-brand">Device Monitoring</div>
+            <div class="fs-3 text-light navbar-brand">
+                <a class="navbar-brand" href="#" onclick="refreshPage()">Device Monitoring</a>
+            </div>
 
             <!-- Device Status Navbar -->
             <div class="d-flex flex-row text-light justify-content-end align-items-center flex-wrap">
@@ -111,21 +114,21 @@
         <div class="d-flex input-group w-50">
             <input id="tagify-filter-bar"
                    type="text"
-                   class="form-control form-control-solid"
+                   class="form-control form-control-solid w-25"
                    aria-label=""
                    onkeyup="filterPageTagify" />
-            <button class="btn btn-outline-warning p-2" onclick="checkVisibleFilteredDevices()">
+            <button class="btn btn-outline-warning bg-gray p-2" onclick="checkVisibleFilteredDevices()">
                 <i class="fa-regular fa-square-check fa-lg"></i>
                 Check Visible Devices
             </button>
-            <button class="btn btn-outline-warning p-2" onclick="resetCameras()">
+            <button class="btn btn-outline-warning bg-gray p-2" onclick="resetCameras()">
                 <i class="fa-regular fa-square-minus fa-lg"></i>
                 Uncheck Visible Devices
             </button>
         </div>
         <div>
-@*             <button class="btn btn-dark" onclick="showCreateDeviceModal()">
-                Create Device
+            @*             <button class="btn btn-dark" onclick="showCreateDeviceModal()">
+            Create Device
             </button> *@
         </div>
     </div>
@@ -135,9 +138,11 @@
     <div class="accordion-item">
         @* Accordion Header *@
         <div class="d-flex justify-content-center accordion-header bg-secondary border-bottom border-dark shadow p-1 mb-3 rounded" id="headingOne">
+
             <button class="d-flex justify-content-center border-0 p-0 m-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
                 <i class="fas fa-chevron-down fa-xl bg-secondary p-0 border-0"></i>
             </button>
+
         </div>
 
         @* Accordion Body *@
@@ -160,15 +165,14 @@
                                         Reset Labels
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
-                                    <button type="submit" id="resetFieldsButton" class="btn btn-secondary bg-light-gray mb-2" onclick="resetFields()">
+                                    <button type="submit" id="resetFieldsButton" class="btn btn-secondary bg-gray mb-2" onclick="resetFields()">
                                         <i class="fa-solid fa-rectangle-list"></i>
                                         Reset Fields
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
-                                    <button type="submit" id="resetCamerasButton" class="btn btn-secondary mb-2" onclick="resetCameras()">
-                                        <i class="fa-solid fa-file-export"></i>
-                                        Reset Exports
-                                        <i class="fa-solid fa-rotate-left"></i>
+                                    <button type="submit" id="toggleSelectAllLabels" class="btn btn-outline-warning bg-light-gray mb-2" onclick="toggleSelectLabels()">
+                                        <i class="fa-regular fa-square-check"></i>
+                                        Toggle All Labels
                                     </button>
                                 </div>
 
@@ -212,24 +216,31 @@
                                         <button type="button" class="btn mb-2 border-0" disabled>
                                             Output
                                         </button>
-                                        <button id="publishButton" type="button" class="btn btn-warning mb-2" onclick="showPublishDeviceModal()">
-                                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                                            Publish
-                                        </button>
+                                        <div class="btn-group">
+                                            <button id="copyDevicesJSONButton" type="button" class="btn btn-outline-warning text-dark mb-2" onclick="copyDevicesJSON()">
+                                                <i class="fa-solid fa-copy"></i>
+                                                Copy
+                                            </button>
+                                            <button id="publishButton" type="button" class="btn btn-outline-warning text-dark mb-2" onclick="showPublishDeviceModal()">
+                                                <i class="fa-solid fa-square-share-nodes"></i>
+                                                Publish
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
                                         <pre class="language-json">
-                                        <code id="templateOutputAdvanced" class="language-json">
-                                    </code>
-                                 </pre>
+                                            <code id="templateOutputAdvanced" class="language-json" style="max-height:400px; overflow-y: auto;">
+                                            </code>
+                                        </pre>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-end mt-3 btn-group">
+                <div class="d-flex justify-content-end mt-0 btn-group">
                     <button type="submit" id="exportButton" class="btn btn-warning" onclick="exportSelectedDevices()">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         Export Devices
                     </button>
                 </div>
@@ -266,8 +277,6 @@
             </div>
         </div>
     </div>
-
-
 
 
     <!-- ModalPublishDevice -->
@@ -313,10 +322,10 @@
                 </div>
                 <div class="modal-footer">
                     <div>
-@*                         <button type="button" class="btn btn-secondary" data-dismiss="modalPublishDevice">Close</button>
+                        @*                         <button type="button" class="btn btn-secondary" data-dismiss="modalPublishDevice">Close</button>
                         <button id="publishPostButton" type="button" class="btn btn-warning" onclick="publishDevices()">
-                            Publish
-                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        Publish
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         </button> *@
                     </div>
                 </div>
@@ -356,7 +365,7 @@
                                     else
                                     {
                                         <!-- Replace with your static placeholder image -->
-                                        <img src='https://www.urba-ea.org/wp-content/plugins/video-thumbnails/default.jpg'
+                                        <img src='~/img/img_camera-thumbnail-resized.jpg'
                                              class='img-thumbnail card-img-left p-0'
                                              style='width:270px !important; height:152!important;'>
                                     }
@@ -562,5 +571,5 @@
 
 
 @section Scripts {
-    <script src="~/js/dist/main.js"></script>
+    <script src="~/js/dist/bundle.js"></script>
 }

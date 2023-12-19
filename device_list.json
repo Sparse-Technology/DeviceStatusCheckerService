@@ -14,5 +14,39 @@
         "URI": "rtsp://10.5.5.1:554/H264?ch=1&subtype=1&proto=Onvif"
       }
     ]
+  },
+
+
+  {
+    "UUID": "2",
+    "IP": "10.6.6.1",
+    "User": "root2",
+    "Password": "root2",
+    "Hostname": "host2",
+    "PresentationURL": "powerpoint.com",
+    "Streams": [
+      {
+        "URI": "rtsp://10.5.2.1:554/H264?ch=1&subtype=1&proto=Onvif"
+      },
+      {
+        "URI": "rtsp://10.5.2.1:554/H264?ch=1&subtype=3&proto=Onvif"
+      }
+    ]
+  },
+  {
+    "UUID": "3",
+    "IP": "10.7.6.1",
+    "User": "root3",
+    "Password": "root3",
+    "Hostname": "host3",
+    "PresentationURL": "powerpoint.com",
+    "Streams": [
+      {
+        "URI": "rtsp://10.5.7.1:554/H264?ch=1&subtype=1&proto=Onvif"
+      },
+      {
+        "URI": "rtsp://10.5.7.1:554/H264?ch=1&subtype=3&proto=Onvif"
+      }
+    ]
   }
 ]

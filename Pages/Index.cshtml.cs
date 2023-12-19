@@ -29,7 +29,7 @@ namespace DeviceStatusCheckerService.Pages
 
         public class JsonHTML
         {
-            public string HTMLContent { get; set; }
+            public string? HTMLContent { get; set; }
         }
 
         //PROPERTIES

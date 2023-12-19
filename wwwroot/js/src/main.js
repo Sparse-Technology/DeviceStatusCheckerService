@@ -1,14 +1,15 @@
- import $ from 'jquery';
- import Tagify from "@yaireo/tagify";
-import "@yaireo/tagify/dist/tagify.css";
+import { CustomTagify } from './Classes/CustomTagify';
+import hljs from "highlight.js";
+import "highlight.js/styles/intellij-light.css";
+import { Tooltip, Toast, Popover } from 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
+import { jsonrepair } from "jsonrepair";
 
 
-import bootstrap from 'bootstrap/dist/'
- import hljs from "highlight.js";
- import "highlight.js/styles/default.min.css";
- import { Tooltip, Toast, Popover } from 'bootstrap';
- import 'bootstrap/dist/css/bootstrap.min.css';
- import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
+//GLOBAL VARIABLES
+var jsonDeviceArray = [];
+var jsonStringCopy = '';
 
 $(document).ready(function () {
     //TAGIFY RELATED EVENTS
@@ -18,7 +19,10 @@ $(document).ready(function () {
         html: true
     });
 
-    // $('#exportMenu').hide();
+     toggleSelectLabels();
+
+    $('[data-bs-toggle="collapse"]').collapse();
+
     $('#cameraCardsBody .form-check input[type="checkbox"]').on('change', function () {
         toggleExportMenuVisibility();
     });
@@ -39,62 +43,7 @@ $(document).ready(function () {
     });
 });
 
-// Extract suggestion text from the visible dataFilter elements
-window.extractStateUniqueWords = function (selector) {
-    var words = new Set();
-    $(selector).each(function () {
-        var dataFilterText = $(this).text().toLowerCase().trim();
-        words.add(dataFilterText);
-    });
-    return Array.from(words);
-}
-
-//Add a tag from the searchArray
-window.onTagAdded = function (e) {
-    const addedTag = e.detail.data.value;
-    searchWordsArray.push(addedTag);
-
-    searchWordsArray.forEach(filterString => filterPageTagify(filterString, '[data-card="container"]:visible'));
-    // Log the searchable keywords to the console
-    tagify.whitelist = extractStateUniqueWords(`[dataFilter]:visible`);
-}
-
-// Remove a tag from the searchArray
-window.onTagRemoved = function (e) {
-    const removedTag = e.detail.data.value;
-
-    const index = searchWordsArray.findIndex(tag => tag === removedTag);
-
-    if (index !== -1) {
-        // Element found, remove it from the array
-        searchWordsArray.splice(index, 1);
-    }
-    // After removing an element start searching again
-
-    if (searchWordsArray.length === 0) {
-        // If no tags are present, show all camera cards
-        $('[data-card="container"]').show();
-    } else {
-        // If tags are present, filter based on the remaining tags
-        searchWordsArray.forEach(filterString =>
-            filterPageTagify(filterString, '[data-card="container"]'));
-    }
-    tagify.whitelist = extractStateUniqueWords(`[dataFilter]:visible`);
-}
-
-// Tagify Filter
-window.filterPageTagify = function (filterString, selector) {
-    var filter = filterString.toLowerCase(); // Convert filter to lowercase for case-insensitive comparison
-
-    if (filter.length <= 2 && filter.length > 0) {
-        return;
-    } else {
-        $(selector).filter(function () {
-            // Change the comparison to check if the text contains the filter string
-            $(this).toggle($(this).text().toLowerCase().includes(filter));
-        });
-    }
-}
+const customTagify = new CustomTagify("#tagify-filter-bar", `[dataFilter]:visible`);
 
 //EXPORT PART
 window.toggleExportMenuVisibility = function () {
@@ -119,10 +68,6 @@ window.resetFields = function () {
     $('[id^=btnRenameInput_]').prop('disabled', true);
 }
 
-window.resetCameras = function () {
-    $('#cameraCardsBody .form-check input[type="checkbox"]').prop('checked', false);
-}
-
 window.toggleRenameKeys = function () {
     var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
 
@@ -136,6 +81,28 @@ window.toggleRenameKeys = function () {
         btnRenameInput.prop('disabled', !this.checked);
     });
 }
+
+// Variable to track the state of selection
+var isAllSelected = true;
+
+// Function to toggle selection
+window.toggleSelectLabels = function () {
+    var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
+
+    checkedLabels.each(function () {
+        var propertyName = this.id.replace("btncheck_", "");
+        var btnRenameInput = $('#btnRenameInput_' + propertyName);
+
+        // Toggle the disabled attribute based on the state
+        btnRenameInput.prop('disabled', isAllSelected);
+        // Toggle the checkbox based on the state
+        this.checked = !isAllSelected;
+    });
+
+    // Toggle the state for the next click
+    isAllSelected = !isAllSelected;
+}
+
 
 window.exportSelectedDevices = function () {
     var selectedCheckboxIds = [];
@@ -183,9 +150,8 @@ window.exportSelectedDevices = function () {
         return cleanedString;
     }
 
-
     $.ajax({
-        //Stringi linke çevirip gönderdik
+        //Stringi linke �evirip g�nderdik
         url: `/Index?handler=ExportTemplateDevices&selectedCheckboxIdsParam=${btoa(JSON.stringify(selectedCheckboxIds))}&selectedDynamicKeys=${selectedDynamicKeysParam}&renamedKeys=${renamedKeysParam}`,
         success: function (result) {
             // FORMATTING RESULT
@@ -195,6 +161,8 @@ window.exportSelectedDevices = function () {
 
             // RENDERING
             var jsonString = JSON.stringify(jsonDeviceArray, null, 2);
+            jsonString = jsonrepair(jsonString);
+            jsonStringCopy = jsonString;
 
             $('#templateOutputAdvanced').removeAttr('data-highlighted');
             $('#templateOutputAdvanced').html(jsonString);
@@ -211,15 +179,6 @@ window.exportSelectedDevices = function () {
                 alert("Export error occurred.");
             }
         }
-    });
-}
-
-window.copyDevicesJSON = function () {
-    var htmlToCopy = $('#modalJSONResult').text();
-    navigator.clipboard.writeText(htmlToCopy).then(() => {
-        alert("Content is copied to clipboard")
-    }).catch((error) => {
-        alert("Unable to copy the content", error);
     });
 }
 
@@ -244,7 +203,6 @@ window.exportSelectedDevicesAdvanced = function () {
     const userTemplate = $('#templateInput').val();
     const encodedTemplate = btoa(userTemplate);
 
-
     $.ajax({
         url: `/Index?handler=ExportDevices&tpl=${encodedTemplate}&selectedCheckboxIdsParam=${btoa(JSON.stringify(selectedCheckboxIds))}`,
         contentType: 'application/json',
@@ -254,6 +212,7 @@ window.exportSelectedDevicesAdvanced = function () {
 
             $('#templateOutputAdvanced').removeAttr('data-highlighted');
             $('#templateOutputAdvanced').html(jsonString);
+            jsonStringCopy = jsonString;
 
             //IMPORTANT, When adding highlight.js
             //you should use JS DOM selector not JQuery selector,
@@ -274,16 +233,12 @@ window.exportSelectedDevicesAdvanced = function () {
     });
 }
 
-window.toggleVisibility = function (elementId) {
-    $(elementId).toggleClass('d-none');
-}
-
 window.toggleExportOptions = function () {
     var exportOptionsButton = $("#exportOptionsButton");
 
     exportOptionsButton.text(exportOptionsButton.text() === 'Simple Export Options' ? 'Advanced Export Options' : 'Simple Export Options');
-    toggleVisibility('#dynamicKeys');
-    toggleVisibility('#advancedExportInput');
+    $('#dynamicKeys').toggleClass('d-none');
+    $('#advancedExportInput').toggleClass('d-none');
 
     var exportButton = $('#exportButton');
     exportButton.attr('onclick', (exportButton.attr('onclick') === 'exportSelectedDevicesAdvanced()' ? 'exportSelectedDevices()' : 'exportSelectedDevicesAdvanced()'));
@@ -321,14 +276,12 @@ window.publishDevices = function () {
     });
 }
 
-//GLOBAL VARIABLES
-var jsonDeviceArray = [];
 
 //Template Input Visibility
 var templateInputGroup = $('#templateInputGroup');
 var templateInput = $('#templateInput');
 templateInput.val(
-    `[
+`[
 {{ for model in models }}
     {
         "UUID": "{{ model.uuid }}",
@@ -363,16 +316,19 @@ templateInput.val(
 ]`
 );
 
-var searchWordsArray = [];
-//Initialize Tagify Filter
-var inputBar = document.querySelector('#tagify-filter-bar'),
+window.refreshPage = function () {
+    location.reload(true);
+};
 
-    // Initialize tagify to an object
-    tagify = new Tagify(inputBar, {
-        whitelist: extractStateUniqueWords(`[dataFilter]:visible`),
-        placeholder: "Filter",
-        enforceWhitelist: false
+window.copyDevicesJSON = function () {
+    navigator.clipboard.writeText(jsonStringCopy).then(() => {
+        console.log(jsonStringCopy);
+        alert("Content is copied to clipboard")
+    }).catch((error) => {
+        alert("Unable to copy the content", error);
     });
+}
 
-tagify.on(`add`, onTagAdded);
-tagify.on(`remove`, onTagRemoved);
+
+
+
