@@ -347,46 +347,12 @@
                             <div>
                                 @* Thumbnail *@
                                 <div class="d-flex flex- justify-content-between">
-                                    @{
-                                        var applicationUrl = Configuration["profiles:Http:applicationUrl"] ?? "http://localhost:90";
-                                        var baseUrl = applicationUrl.TrimEnd('/');
-                                        var imagePath = $"/thumbnails/{dev.UUID}/stream_0__1.jpeg";
-                                        var absolutePath = baseUrl + imagePath;
-                                        var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";
-                                        bool imageExists = await ImageExistsAsync(absolutePath);
-                                    }
-
-                                    @if (imageExists)
-                                    {
-                                        <img src='@imagePathRelative'
-                                             class='img-thumbnail card-img-left p-0'
-                                             style='width:270px !important; height:152px !important;'>
-                                    }
-                                    else
-                                    {
-                                        <!-- Replace with your static placeholder image -->
-                                        <img src='~/img/img_camera-thumbnail-resized.jpg'
-                                             class='img-thumbnail card-img-left p-0'
-                                             style='width:270px !important; height:152!important;'>
-                                    }
-
-                                    @functions {
-                                    private async Task<bool> ImageExistsAsync(string imageUrl)
-                                    {
-                                        try
-                                        {
-                                            using (var httpClient = new HttpClient())
-                                            using (var response = await httpClient.GetAsync(imageUrl))
-                                            {
-                                                return response.IsSuccessStatusCode;
-                                            }
-                                        }
-                                        catch (HttpRequestException)
-                                        {
-                                            return false;
-                                        }
-                                    }
-                                }
+                                    @{var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";}
+                                    <img src='@imagePathRelative'
+                                        onerror="this.onerror=null;this.src='/img/img_camera-thumbnail-resized.jpg';"
+                                        class='img-thumbnail card-img-left p-0'
+                                        style='width:270px !important; height:152px !important;'>
+                                
                                 @* Creating Camera Image in a Column*@
                                 <div class="d-flex flex-column justify-content-between align-items-end">
                                     <div class="form-check align-self-end">
