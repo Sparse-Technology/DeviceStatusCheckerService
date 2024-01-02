@@ -1,287 +1,312 @@
-import { CustomTagify } from './Classes/CustomTagify';
+import { CustomTagify } from "./Classes/CustomTagify";
 import hljs from "highlight.js";
 import "highlight.js/styles/intellij-light.css";
-import { Tooltip, Toast, Popover } from 'bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Tooltip, Toast, Popover } from "bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
 import { jsonrepair } from "jsonrepair";
 
-
-//GLOBAL VARIABLES
+// GLOBAL VARIABLES
 var jsonDeviceArray = [];
-var jsonStringCopy = '';
+var jsonStringCopy = "";
 
 $(document).ready(function () {
-    //TAGIFY RELATED EVENTS
-    $('[data-toggle="tooltip"]').tooltip({
-        animated: 'fade',
-        placement: 'bottom',
-        html: true
-    });
+  // TAGIFY RELATED EVENTS
+  $('[data-toggle="tooltip"]').tooltip({
+    animated: "fade",
+    placement: "bottom",
+    html: true,
+  });
 
-     toggleSelectLabels();
+  toggleSelectLabels();
 
-    $('[data-bs-toggle="collapse"]').collapse();
+  $('[data-bs-toggle="collapse"]').collapse();
 
-    $('#cameraCardsBody .form-check input[type="checkbox"]').on('change', function () {
-        toggleExportMenuVisibility();
-    });
+  $('#cameraCardsBody .form-check input[type="checkbox"]').on(
+    "change",
+    function () {
+      toggleExportMenuVisibility();
+    }
+  );
 
-    //Closing modal
-    $('[data-dismiss="modalLabel"]').on('click', function () {
-        $('#exportDeviceModal').modal('hide');
-    });
+  // Closing modals
+  $('[data-dismiss="modalLabel"]').on("click", function () {
+    $("#exportDeviceModal").modal("hide");
+  });
 
-    //Closing modal
-    $('[data-dismiss="modalCreateDevice"]').on('click', function () {
-        $('#createDeviceModal').modal('hide');
-    });
+  $('[data-dismiss="modalCreateDevice"]').on("click", function () {
+    $("#createDeviceModal").modal("hide");
+  });
 
-    //Closing modal
-    $('[data-dismiss="modalPublishDevice"]').on('click', function () {
-        $('#publishDeviceModal').modal('hide');
-    });
+  $('[data-dismiss="modalPublishDevice"]').on("click", function () {
+    $("#publishDeviceModal").modal("hide");
+  });
 });
 
-const customTagify = new CustomTagify("#tagify-filter-bar", `[dataFilter]:visible`);
+const customTagify = new CustomTagify(
+  "#tagify-filter-bar",
+  `[dataFilter]:visible`
+);
 
-//EXPORT PART
+// EXPORT PART
 window.toggleExportMenuVisibility = function () {
-    // Check if at least one checkbox is checked on the entire page
-    var collapseOne = $('#collapseOne');
+  // Check if at least one checkbox is checked on the entire page
+  var collapseOne = $("#collapseOne");
 
-    if ($('#cameraCardsBody .form-check input[type="checkbox"]:checked').length > 0) {
-        collapseOne.collapse('show');
-    } else {
-        collapseOne.collapse('hide');
-    }
-}
+  if (
+    $('#cameraCardsBody .form-check input[type="checkbox"]:checked').length > 0
+  ) {
+    collapseOne.collapse("show");
+  } else {
+    collapseOne.collapse("hide");
+  }
+};
 
 window.resetLabels = function () {
-    $('#dynamicKeys input[type="checkbox"]').prop('checked', false).change();
-    $('[id^=btnRenameInput_]').val(null);
-    $('[id^=btnRenameInput_]').prop('disabled', true);
-}
+  $('#dynamicKeys input[type="checkbox"]').prop("checked", false).change();
+  $("[id^=btnRenameInput_]").val(null);
+  $("[id^=btnRenameInput_]").prop("disabled", true);
+};
 
 window.resetFields = function () {
-    $('[id^=btnRenameInput_]').val(null);
-    $('[id^=btnRenameInput_]').prop('disabled', true);
-}
+  $("[id^=btnRenameInput_]").val(null);
+  $("[id^=btnRenameInput_]").prop("disabled", true);
+};
+
+window.resetCameras = function () {
+  $('#cameraCardsBody .form-check input[type="checkbox"]').prop(
+    "checked",
+    false
+  );
+};
 
 window.toggleRenameKeys = function () {
-    var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
+  var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
 
-    checkedLabels.each(function () {
-        var propertyName = this.id.replace("btncheck_", "");
+  checkedLabels.each(function () {
+    var propertyName = this.id.replace("btncheck_", "");
 
-        // Finding specific inputs
-        var btnRenameInput = $('#btnRenameInput_' + propertyName);
+    // Finding specific inputs
+    var btnRenameInput = $("#btnRenameInput_" + propertyName);
 
-        // Toggle the disabled attribute based on the checkbox's checked status
-        btnRenameInput.prop('disabled', !this.checked);
-    });
-}
+    // Toggle the disabled attribute based on the checkbox's checked status
+    btnRenameInput.prop("disabled", !this.checked);
+  });
+};
 
 // Variable to track the state of selection
 var isAllSelected = true;
 
 // Function to toggle selection
 window.toggleSelectLabels = function () {
-    var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
+  var checkedLabels = $('#dynamicKeys input[type="checkbox"]');
 
-    checkedLabels.each(function () {
-        var propertyName = this.id.replace("btncheck_", "");
-        var btnRenameInput = $('#btnRenameInput_' + propertyName);
+  checkedLabels.each(function () {
+    var propertyName = this.id.replace("btncheck_", "");
+    var btnRenameInput = $("#btnRenameInput_" + propertyName);
 
-        // Toggle the disabled attribute based on the state
-        btnRenameInput.prop('disabled', isAllSelected);
-        // Toggle the checkbox based on the state
-        this.checked = !isAllSelected;
-    });
+    // Toggle the disabled attribute based on the state
+    btnRenameInput.prop("disabled", isAllSelected);
+    // Toggle the checkbox based on the state
+    this.checked = !isAllSelected;
+  });
 
-    // Toggle the state for the next click
-    isAllSelected = !isAllSelected;
-}
-
+  // Toggle the state for the next click
+  isAllSelected = !isAllSelected;
+};
 
 window.exportSelectedDevices = function () {
-    var selectedCheckboxIds = [];
-    $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
-        // Check if the checkbox is checked
-        if ($(this).is(':checked')) {
-            selectedCheckboxIds.push(this.id.split("_")[1]);
-        }
-    });
-
-    //Creating original and renamed key-label names arrays
-    var selectedDynamicKeys = [];
-    var renamedKeys = [];
-
-    $('#dynamicKeys input[type="checkbox"]').each(function () {
-        if ($(this).is(':checked')) {
-            // Getting original key-label name
-            var propertyName = this.id.split("_")[1];
-            selectedDynamicKeys.push(propertyName);
-
-            // Getting renamed key-label name
-            var renamedKey = "";
-            var btnRenameInput = $('#btnRenameInput_' + propertyName);
-            var btnRenameInputValue = btnRenameInput.val();
-
-            if (btnRenameInputValue == null || btnRenameInputValue.trim() === '') {
-                renamedKey = btnRenameInput.attr('placeholder');
-            } else {
-                renamedKey = btnRenameInputValue;
-            }
-
-            renamedKeys.push(renamedKey);
-        }
-    });
-
-    var selectedDynamicKeysParam = encodeURIComponent(JSON.stringify(selectedDynamicKeys));
-    var renamedKeysParam = encodeURIComponent(JSON.stringify(renamedKeys));
-
-    //Removing trailing comma
-    function removeTrailingComma(content) {
-        var resultString = String(content);
-        var lastCommaIndex = resultString.lastIndexOf(',');
-        var untrailedString = resultString.slice(0, lastCommaIndex) + resultString.slice(lastCommaIndex + 1);
-        var cleanedString = untrailedString.replace(/ /g, '');
-        return cleanedString;
+  var selectedCheckboxIds = [];
+  $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
+    // Check if the checkbox is checked
+    if ($(this).is(":checked")) {
+      selectedCheckboxIds.push(this.id.split("_")[1]);
     }
+  });
 
-    $.ajax({
-        //Stringi linke �evirip g�nderdik
-        url: `/Index?handler=ExportTemplateDevices&selectedCheckboxIdsParam=${btoa(JSON.stringify(selectedCheckboxIds))}&selectedDynamicKeys=${selectedDynamicKeysParam}&renamedKeys=${renamedKeysParam}`,
-        success: function (result) {
-            // FORMATTING RESULT
-            var untrailedString = removeTrailingComma(result.htmlContent);
-            const correctedJsonString = untrailedString.replace(/,(\s*})|},\s*\]/g, (match, p1) => p1 ? p1 : '}]');
-            jsonDeviceArray = JSON.parse(correctedJsonString);
+  // Creating original and renamed key-label names arrays
+  var selectedDynamicKeys = [];
+  var renamedKeys = [];
 
-            // RENDERING
-            var jsonString = JSON.stringify(jsonDeviceArray, null, 2);
-            jsonString = jsonrepair(jsonString);
-            jsonStringCopy = jsonString;
+  $('#dynamicKeys input[type="checkbox"]').each(function () {
+    if ($(this).is(":checked")) {
+      // Getting original key-label name
+      var propertyName = this.id.split("_")[1];
+      selectedDynamicKeys.push(propertyName);
 
-            $('#templateOutputAdvanced').removeAttr('data-highlighted');
-            $('#templateOutputAdvanced').html(jsonString);
-            hljs.highlightElement(document.querySelector('#templateOutputAdvanced'));
-        },
-        error: function (xhr, textStatus, errorThrown) {
-            console.error("Export error:", textStatus, errorThrown);
+      // Getting renamed key-label name
+      var renamedKey = "";
+      var btnRenameInput = $("#btnRenameInput_" + propertyName);
+      var btnRenameInputValue = btnRenameInput.val();
 
-            // Check if the response has an 'error' property
-            if (xhr.responseJSON && xhr.responseJSON.error) {
-                alert("Export error: " + xhr.responseJSON.error);
-            } else {
-                // If no specific error message, show a generic message
-                alert("Export error occurred.");
-            }
-        }
-    });
-}
+      if (btnRenameInputValue == null || btnRenameInputValue.trim() === "") {
+        renamedKey = btnRenameInput.attr("placeholder");
+      } else {
+        renamedKey = btnRenameInputValue;
+      }
+
+      renamedKeys.push(renamedKey);
+    }
+  });
+
+  var selectedDynamicKeysParam = encodeURIComponent(
+    JSON.stringify(selectedDynamicKeys)
+  );
+  var renamedKeysParam = encodeURIComponent(JSON.stringify(renamedKeys));
+
+  // Removing trailing comma
+  function removeTrailingComma(content) {
+    var resultString = String(content);
+    var lastCommaIndex = resultString.lastIndexOf(",");
+    var untrailedString =
+      resultString.slice(0, lastCommaIndex) +
+      resultString.slice(lastCommaIndex + 1);
+    var cleanedString = untrailedString.replace(/ /g, "");
+    return cleanedString;
+  }
+
+  $.ajax({
+    url: `/Index?handler=ExportTemplateDevices&selectedCheckboxIdsParam=${btoa(
+      JSON.stringify(selectedCheckboxIds)
+    )}&selectedDynamicKeys=${selectedDynamicKeysParam}&renamedKeys=${renamedKeysParam}`,
+    success: function (result) {
+      // FORMATTING RESULT
+      var untrailedString = removeTrailingComma(result.htmlContent);
+      const correctedJsonString = untrailedString.replace(
+        /,(\s*})|},\s*\]/g,
+        (match, p1) => (p1 ? p1 : "}]")
+      );
+      jsonDeviceArray = JSON.parse(correctedJsonString);
+
+      var jsonString = JSON.stringify(jsonDeviceArray, null, 2);
+      jsonString = jsonrepair(jsonString);
+      jsonStringCopy = jsonString;
+
+      $("#templateOutputAdvanced").removeAttr("data-highlighted");
+      $("#templateOutputAdvanced").html(jsonString);
+      hljs.highlightElement(document.querySelector("#templateOutputAdvanced"));
+    },
+    error: function (xhr, textStatus, errorThrown) {
+      console.error("Export error:", textStatus, errorThrown);
+
+      if (xhr.responseJSON && xhr.responseJSON.error) {
+        alert("Export error: " + xhr.responseJSON.error);
+      } else {
+        alert("Export error occurred.");
+      }
+    },
+  });
+};
 
 window.checkVisibleFilteredDevices = function () {
-    $('#cameraCardsBody .form-check input[type="checkbox"]:visible').prop('checked', true);
-}
+  $('#cameraCardsBody .form-check input[type="checkbox"]:visible').prop(
+    "checked",
+    true
+  );
+};
 
 window.resetInput = function (propertyName) {
-    var renameInputToReset = $('#btnRenameInput_' + propertyName);
-    renameInputToReset.val(null);
-}
+  var renameInputToReset = $("#btnRenameInput_" + propertyName);
+  renameInputToReset.val(null);
+};
 
 window.exportSelectedDevicesAdvanced = function () {
-    var selectedCheckboxIds = [];
-    $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
-        // Check if the checkbox is checked
-        if ($(this).is(':checked')) {
-            // Add the ID to the array
-            selectedCheckboxIds.push(this.id.split("_")[1]);
-        }
-    });
-    const userTemplate = $('#templateInput').val();
-    const encodedTemplate = btoa(userTemplate);
+  var selectedCheckboxIds = [];
+  $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
+    // Check if the checkbox is checked
+    if ($(this).is(":checked")) {
+      // Add the ID to the array
+      selectedCheckboxIds.push(this.id.split("_")[1]);
+    }
+  });
+  const userTemplate = $("#templateInput").val();
+  const encodedTemplate = btoa(userTemplate);
 
-    $.ajax({
-        url: `/Index?handler=ExportDevices&tpl=${encodedTemplate}&selectedCheckboxIdsParam=${btoa(JSON.stringify(selectedCheckboxIds))}`,
-        contentType: 'application/json',
-        success: function (result) {
-            jsonDeviceArray = JSON.parse(result);
-            var jsonString = JSON.stringify(jsonDeviceArray, null, 2);
+  $.ajax({
+    url: `/Index?handler=ExportDevices&tpl=${encodedTemplate}&selectedCheckboxIdsParam=${btoa(
+      JSON.stringify(selectedCheckboxIds)
+    )}`,
+    contentType: "application/json",
+    success: function (result) {
+      jsonDeviceArray = JSON.parse(result);
+      var jsonString = JSON.stringify(jsonDeviceArray, null, 2);
 
-            $('#templateOutputAdvanced').removeAttr('data-highlighted');
-            $('#templateOutputAdvanced').html(jsonString);
-            jsonStringCopy = jsonString;
+      $("#templateOutputAdvanced").removeAttr("data-highlighted");
+      $("#templateOutputAdvanced").html(jsonString);
+      jsonStringCopy = jsonString;
 
-            //IMPORTANT, When adding highlight.js
-            //you should use JS DOM selector not JQuery selector,
-            //it is not working with jquery
-            hljs.highlightElement(document.querySelector('#templateOutputAdvanced'));
-        },
-        error: function (xhr, textStatus, errorThrown) {
-            console.error("Export error:", textStatus, errorThrown);
+      // You should use JS DOM selector not JQuery selector with highlight.js,
+      hljs.highlightElement(document.querySelector("#templateOutputAdvanced"));
+    },
+    error: function (xhr, textStatus, errorThrown) {
+      console.error("Export error:", textStatus, errorThrown);
 
-            // Check if the response has an 'error' property
-            if (xhr.responseJSON && xhr.responseJSON.error) {
-                alert("Export error: " + xhr.responseJSON.error);
-            } else {
-                // If no specific error message, show a generic message
-                alert("Export error occurred.");
-            }
-        }
-    });
-}
+      if (xhr.responseJSON && xhr.responseJSON.error) {
+        alert("Export error: " + xhr.responseJSON.error);
+      } else {
+        alert("Export error occurred.");
+      }
+    },
+  });
+};
 
 window.toggleExportOptions = function () {
-    var exportOptionsButton = $("#exportOptionsButton");
+  var exportOptionsButton = $("#exportOptionsButton");
 
-    exportOptionsButton.text(exportOptionsButton.text() === 'Simple Export Options' ? 'Advanced Export Options' : 'Simple Export Options');
-    $('#dynamicKeys').toggleClass('d-none');
-    $('#advancedExportInput').toggleClass('d-none');
+  exportOptionsButton.text(
+    exportOptionsButton.text() === "Simple Export Options"
+      ? "Advanced Export Options"
+      : "Simple Export Options"
+  );
+  $("#dynamicKeys").toggleClass("d-none");
+  $("#advancedExportInput").toggleClass("d-none");
 
-    var exportButton = $('#exportButton');
-    exportButton.attr('onclick', (exportButton.attr('onclick') === 'exportSelectedDevicesAdvanced()' ? 'exportSelectedDevices()' : 'exportSelectedDevicesAdvanced()'));
-}
+  var exportButton = $("#exportButton");
+  exportButton.attr(
+    "onclick",
+    exportButton.attr("onclick") === "exportSelectedDevicesAdvanced()"
+      ? "exportSelectedDevices()"
+      : "exportSelectedDevicesAdvanced()"
+  );
+};
 
 window.showCreateDeviceModal = function () {
-    $('#createDeviceModal').modal('show');
-}
+  $("#createDeviceModal").modal("show");
+};
 
 window.showPublishDeviceModal = function () {
-    $('#publishDeviceModal').modal('show');
-}
+  $("#publishDeviceModal").modal("show");
+};
 
 window.publishDevices = function () {
-    var url = $('#urlInput').val();
-    var username = $('#usernameInput').val();
-    var password = $('#passwordInput').val();
-    var deviceData = jsonDeviceArray;
+  var url = $("#urlInput").val();
+  var username = $("#usernameInput").val();
+  var password = $("#passwordInput").val();
+  var deviceData = jsonDeviceArray;
 
-    $.ajax({
-        type: "POST",
-        url: url,
-        data: JSON.stringify({
-            username: username,
-            password: password,
-            deviceData: deviceData
-        }),
-        contentType: 'application/json',
-        success: function (res) {
-            console.log("Success", res);
-        },
-        error: function (err) {
-            console.error("Error", err);
-        }
-    });
-}
+  $.ajax({
+    type: "POST",
+    url: url,
+    data: JSON.stringify({
+      username: username,
+      password: password,
+      deviceData: deviceData,
+    }),
+    contentType: "application/json",
+    success: function (res) {
+      console.log("Success", res);
+    },
+    error: function (err) {
+      console.error("Error", err);
+    },
+  });
+};
 
-
-//Template Input Visibility
-var templateInputGroup = $('#templateInputGroup');
-var templateInput = $('#templateInput');
+// Template Input Visibility
+var templateInputGroup = $("#templateInputGroup");
+var templateInput = $("#templateInput");
 templateInput.val(
-`[
+  `[
 {{ for model in models }}
     {
         "UUID": "{{ model.uuid }}",
@@ -317,18 +342,17 @@ templateInput.val(
 );
 
 window.refreshPage = function () {
-    location.reload(true);
+  location.reload(true);
 };
 
 window.copyDevicesJSON = function () {
-    navigator.clipboard.writeText(jsonStringCopy).then(() => {
-        console.log(jsonStringCopy);
-        alert("Content is copied to clipboard")
-    }).catch((error) => {
-        alert("Unable to copy the content", error);
+  navigator.clipboard
+    .writeText(jsonStringCopy)
+    .then(() => {
+      console.log(jsonStringCopy);
+      alert("Content is copied to clipboard");
+    })
+    .catch((error) => {
+      alert("Unable to copy the content", error);
     });
-}
-
-
-
-
+};
