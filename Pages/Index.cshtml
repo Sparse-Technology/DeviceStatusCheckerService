@@ -2,10 +2,9 @@
 @using Microsoft.AspNetCore.Hosting
 @using System.Net
 @using System.Web
-
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebHostEnvironment
 
-@* @using DeviceStatusCheckerService.Models.DeviceModel *@
 @model IndexModel
 @{
     ViewData["Title"] = "Device Monitoring";
@@ -349,11 +348,12 @@
                                 @* Thumbnail *@
                                 <div class="d-flex flex- justify-content-between">
                                     @{
-                                        var baseUrl = "http://localhost:90";
+                                        var applicationUrl = Configuration["profiles:Http:applicationUrl"] ?? "http://localhost:90";
+                                        var baseUrl = applicationUrl.TrimEnd('/');
                                         var imagePath = $"/thumbnails/{dev.UUID}/stream_0__1.jpeg";
                                         var absolutePath = baseUrl + imagePath;
                                         var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";
-                                        bool imageExists = ImageExists(absolutePath);
+                                        bool imageExists = await ImageExistsAsync(absolutePath);
                                     }
 
                                     @if (imageExists)
@@ -371,19 +371,17 @@
                                     }
 
                                     @functions {
-                                    private bool ImageExists(string imageUrl)
+                                    private async Task<bool> ImageExistsAsync(string imageUrl)
                                     {
                                         try
                                         {
-                                            var request = (HttpWebRequest)WebRequest.Create(imageUrl);
-                                            request.Method = "HEAD";
-
-                                            using (var response = (HttpWebResponse)request.GetResponse())
+                                            using (var httpClient = new HttpClient())
+                                            using (var response = await httpClient.GetAsync(imageUrl))
                                             {
-                                                return response.StatusCode == HttpStatusCode.OK;
+                                                return response.IsSuccessStatusCode;
                                             }
                                         }
-                                        catch (WebException)
+                                        catch (HttpRequestException)
                                         {
                                             return false;
                                         }

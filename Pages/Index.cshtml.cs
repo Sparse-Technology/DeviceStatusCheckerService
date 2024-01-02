@@ -9,18 +9,16 @@ using Scriban.Runtime;
 using System.Text;
 using System.Net;
 using System.Xml.Linq;
+using System.Text.Json;
 
 namespace DeviceStatusCheckerService.Pages
 {
     public class IndexModel : PageModel
     {
         //FIELDS
-
-        //initializing instances 
         private readonly ILogger<IndexModel> _logger;
         private readonly DeviceManager _deviceManager;
 
-        //Contructor to initialize fields for dependency injection
         public IndexModel(ILogger<IndexModel> logger, DeviceManager deviceManager)
         {
             _logger = logger;
@@ -46,8 +44,6 @@ namespace DeviceStatusCheckerService.Pages
         {
             try
             {
-
-                //List<string> selectedProperties = selectedDynamicKeysArray;
                 List<string> selectedProperties = selectedDynamicKeysArray.Select(MemberRenamer).ToList();
 
                 var _deviceTemplate = Template.Parse(@"
@@ -105,7 +101,16 @@ namespace DeviceStatusCheckerService.Pages
                 if (selectedCheckboxIdsParam != null)
                 {
                     var selectedDynamicKeysArray = System.Text.Json.JsonSerializer.Deserialize<List<string>>(selectedDynamicKeys);
-                    if (selectedDynamicKeysArray.Count == 0)
+
+                    if (selectedDynamicKeysArray == null)
+                    {
+                        return new JsonResult(new { error = "Error deserializing dynamic keys." })
+                        {
+                            StatusCode = (int)HttpStatusCode.BadRequest
+                        };
+                    }
+
+                    if (selectedDynamicKeysArray == null || selectedDynamicKeysArray.Count == 0)
                     {
                         return new JsonResult(new { error = "No labels are selected." })
                         {
@@ -113,17 +118,42 @@ namespace DeviceStatusCheckerService.Pages
                         };
                     }
 
-                    var renamedKeysArray = System.Text.Json.JsonSerializer.Deserialize<List<string>>(renamedKeys);
+                    var renamedKeysArray = JsonSerializer.Deserialize<List<string>>(renamedKeys);
+
+                    if (renamedKeysArray == null)
+                    {
+                        return new JsonResult(new { error = "Error deserializing renamed keys." })
+                        {
+                            StatusCode = (int)HttpStatusCode.BadRequest
+                        };
+                    }
+
                     byte[] data = Convert.FromBase64String(selectedCheckboxIdsParam);
                     string selectedUUIDs = System.Text.Encoding.UTF8.GetString(data);
-                    string[] uuidArray = System.Text.Json.JsonSerializer.Deserialize<string[]>(selectedUUIDs);
+
+                    if (selectedUUIDs == null)
+                    {
+                        return new JsonResult(new { error = "Error decoding selected UUIDs." })
+                        {
+                            StatusCode = (int)HttpStatusCode.BadRequest
+                        };
+                    }
+
+
+                    string[]? uuidArray = JsonSerializer.Deserialize<string[]>(selectedUUIDs);
+
+                    if (uuidArray == null)
+                    {
+                        return new JsonResult(new { error = "Error deserializing UUID array." })
+                        {
+                            StatusCode = (int)HttpStatusCode.BadRequest
+                        };
+                    }
 
                     var selectedDevices = _deviceManager.Devices
                         .Where(device => uuidArray.Contains(device.UUID))
                         .ToList();
 
-
-                    // Check if selectedDevices is null or empty
                     if (selectedDevices.Count == 0)
                     {
                         return new JsonResult(new { error = "Please select devices." })
@@ -158,7 +188,6 @@ namespace DeviceStatusCheckerService.Pages
         {
             if (string.IsNullOrEmpty(tpl))
             {
-                // Handle the error, throw an exception, or return an appropriate response
                 return new JsonResult(new { error = "Please fill the template." })
                 {
                     StatusCode = (int)HttpStatusCode.BadRequest
@@ -168,7 +197,37 @@ namespace DeviceStatusCheckerService.Pages
             {
                 byte[] data = Convert.FromBase64String(selectedCheckboxIdsParam);
                 string selectedUUIDs = System.Text.Encoding.UTF8.GetString(data);
-                string[] uuidArray = System.Text.Json.JsonSerializer.Deserialize<string[]>(selectedUUIDs);
+
+                if (selectedUUIDs == null)
+                {
+                    return new JsonResult(new { error = "Error decoding selected UUIDs." })
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
+                }
+
+                string[]? uuidArray = Array.Empty<string>();
+
+                try
+                {
+                    uuidArray = JsonSerializer.Deserialize<string[]>(selectedUUIDs);
+                }
+                catch (JsonException)
+                {
+                    return new JsonResult(new { error = "Error deserializing UUID array." })
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
+                }
+
+                if (uuidArray == null)
+                {
+                    return new JsonResult(new { error = "Error deserializing UUID array." })
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
+                }
+
                 var selectedDevices = _deviceManager.Devices
                     .Where(device => uuidArray.Contains(device.UUID))
                     .ToList();
@@ -194,8 +253,6 @@ namespace DeviceStatusCheckerService.Pages
             }
         }
 
-
-        //MemberRenamer function for scriban
         private static string MemberRenamer(string name)
         {
             var builder = new StringBuilder();
