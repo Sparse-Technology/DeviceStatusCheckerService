@@ -58,7 +58,7 @@ namespace DeviceStatusCheckerService.Services
             }
             catch (Exception e)
             {
-                //Console.WriteLine($"({ip}, {user}, {password}): {e}");
+                Debug.WriteLine($"({ip}, {user}, {password}): {e}");
                 return null;
             }
 
