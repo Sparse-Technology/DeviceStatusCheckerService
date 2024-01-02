@@ -20,6 +20,7 @@ if (string.IsNullOrEmpty(thumbnailsPath))
 if (!Directory.Exists(thumbnailsPath))
     Directory.CreateDirectory(thumbnailsPath);
 
+app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = new PhysicalFileProvider(thumbnailsPath),
