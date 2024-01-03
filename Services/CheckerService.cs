@@ -92,6 +92,33 @@ namespace DeviceStatusCheckerService.Services
                                     dev.User = user;
                                     dev.Password = pass;
                                     dev.Streams = ss;
+                                    var dt = await Helper.GetSystemDateAndTimeAsync($"{uu.Host}:{uu.Port}", user, pass);
+                                    if (dt != null)
+                                    {
+                                        dev.TimeZone = dt.TimeZone.TZ;
+                                        if (dt.UTCDateTime != null)
+                                        {
+                                            dev.UTCDateTime = new DateTimeOffset(
+                                                dt.UTCDateTime.Date.Year,
+                                                dt.UTCDateTime.Date.Month,
+                                                dt.UTCDateTime.Date.Day,
+                                                dt.UTCDateTime.Time.Hour,
+                                                dt.UTCDateTime.Time.Minute,
+                                                dt.UTCDateTime.Time.Second, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                                        }
+                                        if (dt.LocalDateTime != null)
+                                        {
+                                            dev.LocalDateTime = new DateTimeOffset(
+                                                dt.LocalDateTime.Date.Year,
+                                                dt.LocalDateTime.Date.Month,
+                                                dt.LocalDateTime.Date.Day,
+                                                dt.LocalDateTime.Time.Hour,
+                                                dt.LocalDateTime.Time.Minute,
+                                                dt.LocalDateTime.Time.Second, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                                        }
+                                        dev.DateTimeType = dt.DateTimeType.ToString();
+                                        dev.DaylightSavings = dt.DaylightSavings;
+                                    }
                                     break;
                                 }
                             };
