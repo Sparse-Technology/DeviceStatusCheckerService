@@ -10,7 +10,11 @@
     ViewData["Title"] = "Device Monitoring";
 }
 
-<header>
+@section Styles{
+    <link rel="stylesheet" href="~/css/index.css" />
+}
+
+<div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-2">
         <div class="d-flex flex-row align-items-center justify-content-between me-2 ms-2 w-100">
 
@@ -43,8 +47,9 @@
             </div>
         </div>
     </nav>
-</header>
+</div>
 
+<div id="streamNotif">Stream is copied.</div>
 
 <div data-simplebar>
     <div class="d-flex flex-row justify-content-between p-2 ms-2 me-2">
@@ -444,13 +449,13 @@
                                                         @switch (dev.Streams[i].Status)
                                                         {
                                                             case Models.StreamStatus.OK:
-                                                                <div class="col-lg-8"><a class="badge bg-success" style="white-space: unset !important;" data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">@dev.Streams[i].URI</a></div>
+                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-success" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;" data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">@dev.Streams[i].URI</a></div>
                                                                 break;
                                                             case Models.StreamStatus.ERROR:
-                                                                <div class="col-lg-8"><a class="badge bg-danger" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
+                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-danger" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
                                                                 break;
                                                             default:
-                                                                <div class="col-lg-8"><a class="badge bg-warning" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
+                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-warning" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
                                                                 break;
                                                         }
                                                     }
@@ -473,5 +478,7 @@
 </div>
 
 
+
 @section Scripts {
+    
 }
