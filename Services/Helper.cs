@@ -31,6 +31,12 @@ namespace DeviceStatusCheckerService.Services
             }
         };
 
+        public static async Task<Onvif.Core.Client.Common.SystemDateTime> GetSystemDateAndTimeAsync(string ip, string user, string password)
+        {
+            var deviceCli = await Onvif.Core.Client.OnvifClientFactory.CreateDeviceClientAsync(ip, user, password);
+            return await deviceCli.GetSystemDateAndTimeAsync();
+        }
+
         public static async Task<List<StreamSetup>?> GetStreamSetupsAsync(string ip, string user, string password)
         {
             var list = new List<StreamSetup>();
