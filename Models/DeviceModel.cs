@@ -42,6 +42,12 @@ namespace DeviceStatusCheckerService.Models
 
         public DeviceActiveStatus DeviceActiveStatus { get; set; } = DeviceActiveStatus.UNKNOWN;
         public string Notes { get; set; } = "";
+        public long UTCDateTime { get; set; } = 0;
+        public long LocalDateTime { get; set; } = 0;
+        public string DateTimeType { get; set; } = "";
+        public string TimeZone { get; set; } = "";
+        public bool DaylightSavings { get; set; } = false;
+
         public string LastCheckTime
         {
             get
