@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.Runtime.Serialization;
 
 namespace DeviceStatusCheckerService.Models
 {
@@ -39,7 +38,6 @@ namespace DeviceStatusCheckerService.Models
         public string Password { get; set; } = "";
         public string DescriptionLocation { get; set; } = "";
         public string PresentationURL { get; set; } = "";
-
         public DeviceActiveStatus DeviceActiveStatus { get; set; } = DeviceActiveStatus.UNKNOWN;
         public string Notes { get; set; } = "";
         public long UTCDateTime { get; set; } = 0;

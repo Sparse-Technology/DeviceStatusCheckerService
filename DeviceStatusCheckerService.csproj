@@ -10,6 +10,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Onvif.Core" Version="2.2.2" />
         <PackageReference Include="Rssdp" Version="4.0.4" />
         <PackageReference Include="Scriban" Version="5.9.0" />
