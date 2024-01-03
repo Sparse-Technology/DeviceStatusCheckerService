@@ -1,8 +1,5 @@
 ﻿using DeviceStatusCheckerService.Models;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
-using Onvif.Core.Client.Device;
 using Rssdp;
-using System;
 using System.Collections.Concurrent;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
@@ -21,10 +18,13 @@ namespace DeviceStatusCheckerService.Services
         private Thread? PingThread;
         private Thread? StreamTestThread;
 
+        private SsdpDevicePublisher _Publisher;
         private DiscoveryService? _discoveryService;
         private DeviceManager _deviceManager;
 
-        public CheckerService(ILogger<CheckerService> logger, IConfiguration configuration, HttpClient httpClient, DeviceManager deviceManager)
+        public CheckerService(ILogger<CheckerService> logger, IConfiguration configuration,
+            IWebHostEnvironment hostingEnvironment,
+            HttpClient httpClient, DeviceManager deviceManager)
         {
             _logger = logger;
             _httpClient = httpClient;
@@ -56,6 +56,13 @@ namespace DeviceStatusCheckerService.Services
 
             StreamTestThread = new Thread(new ThreadStart(StreamTestLoop));
             StreamTestThread.Start();
+
+            #region SSDP
+            var device = Helper.SsdpRootDevice(configuration);
+            File.WriteAllText(Path.Combine(hostingEnvironment.WebRootPath, "descriptiondocument.xml"), device.ToDescriptionDocument());
+            _Publisher = new SsdpDevicePublisher();
+            _Publisher.AddDevice(device);
+            #endregion
         }
 
         private async Task TryAddDevice(DeviceAvailableEventArgs e)

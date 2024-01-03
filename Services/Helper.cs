@@ -1,4 +1,5 @@
 ﻿using DeviceStatusCheckerService.Models;
+using Microsoft.Extensions.Configuration;
 using Rssdp;
 using System;
 using System.Diagnostics;
@@ -147,6 +148,46 @@ namespace DeviceStatusCheckerService.Services
                 dev.PresentationURL = GetField("presentationURL");
             }
             catch { }
+        }
+
+        internal static SsdpRootDevice SsdpRootDevice(IConfiguration configuration)
+        {
+            var iface = configuration.GetValue<string>("AppConfiguration:NetworkInterface");
+            var bindIp = Helper.GetIPAddress(iface);
+            var hostUri = configuration.GetValue<string>("Kestrel:Endpoints:Http:Url", "http://*:80");
+            var bindPort = new Uri(hostUri!).Port;
+            var uuid = configuration.GetValue<string>("AppConfiguration:ServerDescription:Uuid", Guid.NewGuid().ToString());
+            var version = configuration.GetValue<string>("AppConfiguration:ServerDescription:Version", "v0.0.0");
+            var friendlyName = configuration.GetValue<string>("AppConfiguration:ServerDescription:FriendlyName", "Device Status Checker");
+            var manufacturer = configuration.GetValue<string>("AppConfiguration:ServerDescription:Manufacturer", "Sparse Lab");
+            var modelName = configuration.GetValue<string>("AppConfiguration:ServerDescription:ModelName", "Device Status Checker");
+            var serialNumber = configuration.GetValue<string>("AppConfiguration:ServerDescription:SerialNumber", "00000000");
+
+            var deviceDefinition = new SsdpRootDevice()
+            {
+                CacheLifetime = TimeSpan.FromMinutes(30),
+                Location = new Uri($"http://{bindIp}:{bindPort}/descriptiondocument.xml"),
+                PresentationUrl = new Uri($"http://{bindIp}:{bindPort}/"),
+                Uuid = uuid,
+                SerialNumber = serialNumber,
+                ModelNumber = version,
+                ModelName = modelName,
+                Manufacturer = manufacturer,
+                FriendlyName = friendlyName,
+                DeviceType = "upnp:rootdevice",
+                Icons = {
+                 new SsdpDeviceIcon()
+                 {
+                     MimeType = "image/png",
+                     Width = 48,
+                     Height = 48,
+                     ColorDepth = 32,
+                     Url = new Uri($"http://{bindIp}:{bindPort}/img/favicon.png")
+                 }
+                }
+            };
+
+            return deviceDefinition;
         }
     }
 }
