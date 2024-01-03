@@ -31,7 +31,6 @@ class CustomTagify {
       var dataFilterText = $(this).text().toLowerCase().trim();
       words.add(dataFilterText);
     });
-    console.log(Array.from(words));
     return Array.from(words);
   }
 
