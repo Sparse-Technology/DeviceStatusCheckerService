@@ -8,6 +8,7 @@
 #Custom Added folders
 wwwroot/js/dist
 wwwroot/js/package-lock.json
+wwwroot/descriptiondocument.xml
 
 # User-specific files
 *.rsuser
