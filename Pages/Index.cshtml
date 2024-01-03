@@ -172,7 +172,7 @@
                                     </div>
                                     <div>
                                         <pre class="language-json">
-                                            <code id="templateOutputAdvanced" class="language-json" style="max-height:400px; overflow-y: auto;">
+                                        <code id="templateOutputAdvanced" class="language-json" style="max-height:400px; overflow-y: auto;">
                                             </code>
                                         </pre>
                                     </div>
@@ -291,30 +291,32 @@
                             <div>
                                 @* Thumbnail *@
                                 <div class="d-flex flex- justify-content-between">
-                                    @{var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";}
+                                    @{
+                                        var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";
+                                    }
                                     <img src='@imagePathRelative'
-                                        onerror="this.onerror=null;this.src='/img/img_camera-thumbnail-resized.jpg';"
-                                        class='img-thumbnail card-img-left p-0'
-                                        style='width:270px !important; height:152px !important;'>
-                                
-                                @* Creating Camera Image in a Column*@
-                                <div class="d-flex flex-column justify-content-between align-items-end">
-                                    <div class="form-check align-self-end">
-                                        <input type="checkbox" class="btn-check" id="checkbox_@dev.UUID">
-                                        <label class="form-check-label font-weight-bold text-dark btn btn-outline-warning" for="checkbox_@dev.UUID">
-                                            Export
-                                            <i class="fa-solid fa-file-export"></i>
-                                        </label>
+                                         onerror="this.onerror=null;this.src='/img/img_camera-thumbnail-resized.jpg';"
+                                         class='img-thumbnail card-img-left p-0'
+                                         style='width:270px !important; height:152px !important;'>
+
+                                    @* Creating Camera Image in a Column*@
+                                    <div class="d-flex flex-column justify-content-between align-items-end">
+                                        <div class="form-check align-self-end">
+                                            <input type="checkbox" class="btn-check" id="checkbox_@dev.UUID">
+                                            <label class="form-check-label font-weight-bold text-dark btn btn-outline-warning" for="checkbox_@dev.UUID">
+                                                Export
+                                                <i class="fa-solid fa-file-export"></i>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="mt-2">
-                                <hr class="m-0" />
-                                @*LastCheckTimeDate*@
-                                <div class="row">
-                                    <div class="col-lg-4 fw-semibold text-muted ">Last Checked</div>
-                                    <div class="col-lg-8 fw-bold" dataFilter>@dev.LastCheckTime.Split(' ')[0]</div>
+                                <div class="mt-2">
+                                    <hr class="m-0" />
+                                    @*LastCheckTimeDate*@
+                                    <div class="row">
+                                        <div class="col-lg-4 fw-semibold text-muted ">Last Checked</div>
+                                        <div class="col-lg-8 fw-bold" dataFilter>@dev.LastCheckTime.Split(' ')[0]</div>
                                     </div>
 
                                     @*LastCheckHours*@
@@ -403,6 +405,48 @@
                                         </div>
                                     }
 
+                                    @*DateTimeType*@
+                                    @if (!string.IsNullOrEmpty(dev.DateTimeType))
+                                    {
+                                        <div class="row">
+                                            <div class="col-lg-4 fw-semibold text-muted">Date Time Type</div>
+                                            <div class="col-lg-8" dataFilter>@dev.DateTimeType</div>
+                                        </div>
+                                    }
+
+                                    @*DaylightSavings*@
+                                    <div class="row">
+                                        <div class="col-lg-4 fw-semibold text-muted">Daylight Savings</div>
+                                        <div class="col-lg-8" dataFilter>@dev.DaylightSavings</div>
+                                    </div>
+
+                                    @*TimeZone*@
+                                    @if (!string.IsNullOrEmpty(dev.TimeZone))
+                                    {
+                                        <div class="row">
+                                            <div class="col-lg-4 fw-semibold text-muted">Time Zone</div>
+                                            <div class="col-lg-8" dataFilter>@dev.TimeZone</div>
+                                        </div>
+                                    }
+
+                                    @*UTCDateTime*@
+                                    @if (dev.UTCDateTime > 0)
+                                    {
+                                        <div class="row">
+                                            <div class="col-lg-4 fw-semibold text-muted">UTC Date Time</div>
+                                            <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.UTCDateTime)</div>
+                                        </div>
+                                    }
+
+                                    @*LocalDateTime*@
+                                    @if (dev.LocalDateTime > 0)
+                                    {
+                                        <div class="row">
+                                            <div class="col-lg-4 fw-semibold text-muted">LocalDateTime</div>
+                                            <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.LocalDateTime)</div>
+                                        </div>
+                                    }
+
                                     @*Notes*@
                                     @if (!string.IsNullOrEmpty(dev.Notes))
                                     {
@@ -438,31 +482,56 @@
                                     @*DeviceStreams*@
                                     @if (dev.Streams.Count > 0)
                                     {
+                                        <hr class="m-0" />
                                         <div class="container">
-
                                             @for (int i = 0; i < dev.Streams.Count; i++)
                                             {
                                                 <div class="row">
-                                                    <div class="col-lg-4 fw-semibold text-muted">Stream@(i)</div>
-                                                    @try
-                                                    {
-                                                        @switch (dev.Streams[i].Status)
+                                                    <div class="row">
+                                                        <div class="col-lg-2 fw-bold text-muted">Stream@(i)</div>
+                                                        <div class="col-lg-10">@(dev.Streams[i]?.Name ?? "")</div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-lg-2">CodecType</div>
+                                                        <div class="col-lg-10">@(dev.Streams[i]?.CodecType ?? "")</div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-lg-2">Resolution</div>
+                                                        <div class="col-lg-10">[@(dev.Streams[i]?.Resolution.Width ?? 0) x @(dev.Streams[i]?.Resolution.Height ?? 0)]</div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-lg-2">URI</div>
+                                                        @try
                                                         {
-                                                            case Models.StreamStatus.OK:
-                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-success" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;" data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">@dev.Streams[i].URI</a></div>
-                                                                break;
-                                                            case Models.StreamStatus.ERROR:
-                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-danger" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
-                                                                break;
-                                                            default:
-                                                                <div class="col-lg-8 btn btn-sm"><a class="badge bg-warning" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">@dev.Streams[i].URI</a></div>
-                                                                break;
+                                                            @switch (dev.Streams[i].Status)
+                                                            {
+                                                                case Models.StreamStatus.OK:
+                                                                    <div class="col-lg-10">
+                                                                        <a class="btn btn-sm badge bg-success" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
+                                                                           data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">
+                                                                            @dev.Streams[i].URI
+                                                                        </a>
+                                                                    </div>
+                                                                    break;
+                                                                case Models.StreamStatus.ERROR:
+                                                                    <div class="col-lg-10">
+                                                                        <a class="btn btn-sm badge bg-danger" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                            @dev.Streams[i].URI
+                                                                        </a>
+                                                                    </div>
+                                                                    break;
+                                                                default:
+                                                                    <div class="col-lg-10">
+                                                                        <a class="btn btn-sm badge bg-warning" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                            @dev.Streams[i].URI
+                                                                        </a>
+                                                                    </div>
+                                                                    break;
+                                                            }
                                                         }
-                                                    }
-                                                    catch
-                                                    {
-
-                                                    }
+                                                        catch
+                                                        { }
+                                                    </div>
                                                 </div>
                                             }
                                         </div>
@@ -480,5 +549,5 @@
 
 
 @section Scripts {
-    
+
 }
