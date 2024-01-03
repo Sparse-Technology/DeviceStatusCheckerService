@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/js/dist/main.bundle.css" />
     <link rel="icon" type="image/x-icon" href="https://web-test.sparsetechnology.com/images/favicon.png">
 
     <style>
@@ -27,5 +28,7 @@
     @RenderBody()
 
     @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/dist/main.bundle.js"></script>
+
 </body>
 </html>

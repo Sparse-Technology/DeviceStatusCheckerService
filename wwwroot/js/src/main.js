@@ -1,9 +1,10 @@
+import "bootstrap/dist/css/bootstrap.min.css";
+import "highlight.js/styles/intellij-light.css";
+import "../../css/index.css";
+import { Tooltip, Toast, Popover } from "bootstrap";
+import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
 import { CustomTagify } from "./Classes/CustomTagify";
 import hljs from "highlight.js";
-import "highlight.js/styles/intellij-light.css";
-import { Tooltip, Toast, Popover } from "bootstrap";
-import "bootstrap/dist/css/bootstrap.min.css";
-import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
 import { jsonrepair } from "jsonrepair";
 
 // GLOBAL VARIABLES
