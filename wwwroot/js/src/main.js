@@ -1,10 +1,12 @@
-import { CustomTagify } from "./Classes/CustomTagify";
-import hljs from "highlight.js";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "highlight.js/styles/intellij-light.css";
 import { Tooltip, Toast, Popover } from "bootstrap";
-import "bootstrap/dist/css/bootstrap.min.css";
 import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
+import { CustomTagify } from "./Classes/CustomTagify";
+import hljs from "highlight.js";
 import { jsonrepair } from "jsonrepair";
+
+
 
 // GLOBAL VARIABLES
 var jsonDeviceArray = [];
@@ -356,3 +358,29 @@ window.copyDevicesJSON = function () {
       alert("Unable to copy the content", error);
     });
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+  var copyButtons = document.querySelectorAll("[data-stream]");
+
+  copyButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var streamData = button.getAttribute("data-stream");
+
+      navigator.clipboard
+        .writeText(streamData)
+        .then(() => {
+          console.log(streamData);
+          notificateStream();
+        })
+        .catch((error) => {
+          console.log(error)
+        });
+    });
+  });
+});
+
+window.notificateStream = function () {
+  var x = document.getElementById("streamNotif");
+  x.className = "show";
+  setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2500);
+  }
