@@ -39,8 +39,11 @@ namespace DeviceStatusCheckerService.Services
                     var iface = _configuration.GetValue<string>("AppConfiguration:NetworkInterface");
                     var bindIp = Helper.GetIPAddress(iface);
 
+                    var timeout = _configuration.GetValue<int>("AppConfiguration:DiscoveryTimeout");
+                    if (timeout <= 0)
+                        timeout = 60000;
                     _discoveryService = new DiscoveryService();
-                    _discoveryService.StartDiscovery(bindIp?.ToString() ?? "", OnDiscoveredDevice);
+                    _discoveryService.StartDiscovery(bindIp?.ToString() ?? "", OnDiscoveredDevice, timeout);
                 }
 
                 var devicesFile = _configuration.GetValue<string>("AppConfiguration:DefaultDeviceJsonPath");

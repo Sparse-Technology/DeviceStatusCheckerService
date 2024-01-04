@@ -511,7 +511,7 @@
                                                             {
                                                                 case Models.StreamStatus.OK:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-success" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
+                                                                        <a class="btn btn-sm badge bg-success" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
                                                                            data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">
                                                                             @dev.Streams[i].URI
                                                                         </a>
@@ -519,14 +519,14 @@
                                                                     break;
                                                                 case Models.StreamStatus.ERROR:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-danger" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                        <a class="btn btn-sm badge bg-danger" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
                                                                     </div>
                                                                     break;
                                                                 default:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-warning" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                        <a class="btn btn-sm badge bg-warning" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
                                                                     </div>
