@@ -17,6 +17,13 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.x
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v4.0.1
+    - name: Nodemodules install
+      run: |
+        cd wwwroot/js/
+        npm install
+        npm run build
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
