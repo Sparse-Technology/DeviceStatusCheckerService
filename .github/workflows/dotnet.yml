@@ -21,3 +21,11 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Publish for linux-x64
+      run: dotnet publish -c Release -r linux-x64 -o bin/publish_dist/linux-x64/ -p:PublishSingleFile=true --self-contained true
+    - name: Publish for win-x64
+      run: dotnet publish -c Release -r win-x64 -o bin/publish_dist/win-x64/ -p:PublishSingleFile=true --self-contained true
+    - name: Publish for linux-arm64
+      run: dotnet publish -c Release -r linux-arm64 -o bin/publish_dist/linux-arm64/ -p:PublishSingleFile=true --self-contained true
+    - name: Publish for linux-arm
+      run: dotnet publish -c Release -r linux-arm -o bin/publish_dist/linux-arm/ -p:PublishSingleFile=true --self-contained true
