@@ -20,23 +20,24 @@
 
             <!-- Brand -->
             <div class="fs-3 text-light navbar-brand">
-                <a class="navbar-brand" href="#" onclick="refreshPage()">Device Monitoring</a>
+                <img src="~/img/favicon.png" alt="sparse-logo" width="65px" height="75px">
+                <a class="navbar-brand custom-navbar-brand" href="#" onclick="refreshPage()">Device Monitoring</a>
             </div>
 
             <!-- Device Status Navbar -->
             <div class="d-flex flex-row text-light justify-content-end align-items-center flex-wrap">
                 <div class="fs-5 me-4 mb-2">
-                    <span class="text-success fw-bold">Online: </span>
+                    <span class="text-success fw-bold">Available: </span>
                     <span class="badge bg-success">@Model.Devices.Count(d => d.DeviceActiveStatus == Models.DeviceActiveStatus.ONLINE)</span>
                 </div>
 
                 <div class="fs-5 me-4 mb-2">
-                    <span class="text-danger fw-bold">Offline: </span>
+                    <span class="text-danger fw-bold">Unavailable: </span>
                     <span class="badge bg-danger">@Model.Devices.Count(d => d.DeviceActiveStatus == Models.DeviceActiveStatus.OFFLINE)</span>
                 </div>
 
                 <div class="fs-5 me-4 mb-2">
-                    <span class="text-warning fw-bold">Unknown: </span>
+                    <span class="text-warning fw-bold">In Progress: </span>
                     <span class="badge bg-warning">@Model.Devices.Count(d => d.DeviceActiveStatus == Models.DeviceActiveStatus.UNKNOWN)</span>
                 </div>
 
@@ -49,7 +50,7 @@
     </nav>
 </div>
 
-<div id="streamNotif">Stream is copied.</div>
+<div id="streamNotif">Copied</div>
 
 <div data-simplebar>
     <div class="d-flex flex-row justify-content-between p-2 ms-2 me-2">
@@ -62,11 +63,11 @@
                    onkeyup="filterPageTagify" />
             <button class="btn btn-outline-warning bg-gray p-2" onclick="checkVisibleFilteredDevices()">
                 <i class="fa-regular fa-square-check fa-lg"></i>
-                Check Visible Devices
+                Select All
             </button>
             <button class="btn btn-outline-warning bg-gray p-2" onclick="resetCameras()">
                 <i class="fa-regular fa-square-minus fa-lg"></i>
-                Uncheck Visible Devices
+                Unselect All
             </button>
         </div>
         <div>
@@ -282,7 +283,7 @@
             @* Getting Model.Devices *@
             @foreach (var dev in @Model.Devices.OrderBy(d => d.DeviceActiveStatus))
             {
-                @* Creating Container as a row double cam *@
+                @* Creating Container as a row cam *@
                 <div class="col-sm-12 col-md-9 col-lg-6 col-xl-4 p-1" data-card="container">
 
                     @* Creating a CameraCard*@
@@ -290,7 +291,7 @@
                         <div class="card-body">
                             <div>
                                 @* Thumbnail *@
-                                <div class="d-flex flex- justify-content-between">
+                                <div class="d-flex justify-content-between">
                                     @{
                                         var imagePathRelative = $"./thumbnails/{dev.UUID}/stream_0__1.jpeg";
                                     }
@@ -300,7 +301,7 @@
                                          style='width:270px !important; height:152px !important;'>
 
                                     @* Creating Camera Image in a Column*@
-                                    <div class="d-flex flex-column justify-content-between align-items-end">
+                                    <div class="d-flex flex-column ">
                                         <div class="form-check align-self-end">
                                             <input type="checkbox" class="btn-check" id="checkbox_@dev.UUID">
                                             <label class="form-check-label font-weight-bold text-dark btn btn-outline-warning" for="checkbox_@dev.UUID">
@@ -412,39 +413,42 @@
                                             <div class="col-lg-4 fw-semibold text-muted">Date Time Type</div>
                                             <div class="col-lg-8" dataFilter>@dev.DateTimeType</div>
                                         </div>
-                                    }
 
-                                    @*DaylightSavings*@
-                                    <div class="row">
-                                        <div class="col-lg-4 fw-semibold text-muted">Daylight Savings</div>
-                                        <div class="col-lg-8" dataFilter>@dev.DaylightSavings</div>
-                                    </div>
+                                        @if (dev.DateTimeType == "NTP")
+                                        {
+                                            @*DaylightSavings*@
+                                            <div class="row">
+                                                <div class="col-lg-4 fw-semibold text-muted">Daylight Savings</div>
+                                                <div class="col-lg-8" dataFilter>@dev.DaylightSavings</div>
+                                            </div>
 
-                                    @*TimeZone*@
-                                    @if (!string.IsNullOrEmpty(dev.TimeZone))
-                                    {
-                                        <div class="row">
-                                            <div class="col-lg-4 fw-semibold text-muted">Time Zone</div>
-                                            <div class="col-lg-8" dataFilter>@dev.TimeZone</div>
-                                        </div>
-                                    }
+                                            @*TimeZone*@
+                                            @if (!string.IsNullOrEmpty(dev.TimeZone))
+                                            {
+                                                <div class="row">
+                                                    <div class="col-lg-4 fw-semibold text-muted">Time Zone</div>
+                                                    <div class="col-lg-8" dataFilter>@dev.TimeZone</div>
+                                                </div>
+                                            }
 
-                                    @*UTCDateTime*@
-                                    @if (dev.UTCDateTime > 0)
-                                    {
-                                        <div class="row">
-                                            <div class="col-lg-4 fw-semibold text-muted">UTC Date Time</div>
-                                            <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.UTCDateTime)</div>
-                                        </div>
-                                    }
+                                            @*UTCDateTime*@
+                                            @if (dev.UTCDateTime > 0)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-lg-4 fw-semibold text-muted">UTC Date Time</div>
+                                                    <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.UTCDateTime)</div>
+                                                </div>
+                                            }
 
-                                    @*LocalDateTime*@
-                                    @if (dev.LocalDateTime > 0)
-                                    {
-                                        <div class="row">
-                                            <div class="col-lg-4 fw-semibold text-muted">LocalDateTime</div>
-                                            <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.LocalDateTime)</div>
-                                        </div>
+                                            @*LocalDateTime*@
+                                            @if (dev.LocalDateTime > 0)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-lg-4 fw-semibold text-muted">LocalDateTime</div>
+                                                    <div class="col-lg-8" dataFilter>@DateTimeOffset.FromUnixTimeMilliseconds(dev.LocalDateTime)</div>
+                                                </div>
+                                            }
+                                        }
                                     }
 
                                     @*Notes*@
@@ -482,31 +486,31 @@
                                     @*DeviceStreams*@
                                     @if (dev.Streams.Count > 0)
                                     {
-                                        <hr class="m-0" />
+                                        <hr class="m-0 mb-1 mt-1" />
                                         <div class="container">
                                             @for (int i = 0; i < dev.Streams.Count; i++)
                                             {
                                                 <div class="row">
                                                     <div class="row">
-                                                        <div class="col-lg-2 fw-bold text-muted">Stream@(i)</div>
-                                                        <div class="col-lg-10">@(dev.Streams[i]?.Name ?? "")</div>
+                                                        <div class="col-lg-4 fw-bold text-muted">Stream@(i)</div>
+                                                        <div class="col-lg-8 fw-bold text-muted text-decoration-underline">@(dev.Streams[i]?.Name ?? "")</div>
                                                     </div>
                                                     <div class="row">
-                                                        <div class="col-lg-2">CodecType</div>
-                                                        <div class="col-lg-10">@(dev.Streams[i]?.CodecType ?? "")</div>
+                                                        <div class="col-lg-4">CodecType</div>
+                                                        <div class="col-lg-8">@(dev.Streams[i]?.CodecType ?? "")</div>
                                                     </div>
                                                     <div class="row">
-                                                        <div class="col-lg-2">Resolution</div>
-                                                        <div class="col-lg-10">[@(dev.Streams[i]?.Resolution.Width ?? 0) x @(dev.Streams[i]?.Resolution.Height ?? 0)]</div>
+                                                        <div class="col-lg-4">Resolution</div>
+                                                        <div class="col-lg-8">[@(dev.Streams[i]?.Resolution.Width ?? 0) x @(dev.Streams[i]?.Resolution.Height ?? 0)]</div>
                                                     </div>
                                                     <div class="row">
-                                                        <div class="col-lg-2">URI</div>
+                                                        <div class="col-lg-4">URI</div>
                                                         @try
                                                         {
                                                             @switch (dev.Streams[i].Status)
                                                             {
                                                                 case Models.StreamStatus.OK:
-                                                                    <div class="col-lg-10">
+                                                                    <div class="col-lg-8">
                                                                         <a class="btn btn-sm badge bg-success" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
                                                                            data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">
                                                                             @dev.Streams[i].URI
@@ -514,14 +518,14 @@
                                                                     </div>
                                                                     break;
                                                                 case Models.StreamStatus.ERROR:
-                                                                    <div class="col-lg-10">
+                                                                    <div class="col-lg-8">
                                                                         <a class="btn btn-sm badge bg-danger" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
                                                                     </div>
                                                                     break;
                                                                 default:
-                                                                    <div class="col-lg-10">
+                                                                    <div class="col-lg-8">
                                                                         <a class="btn btn-sm badge bg-warning" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
