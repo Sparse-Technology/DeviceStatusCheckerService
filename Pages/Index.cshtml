@@ -10,7 +10,7 @@
     ViewData["Title"] = "Device Monitoring";
 }
 
-@section Styles{
+@section Styles {
     <link rel="stylesheet" href="~/css/index.css" />
 }
 
@@ -50,7 +50,7 @@
     </nav>
 </div>
 
-<div id="streamNotif">Copied</div>
+<div id="notif" class="d-flex justify-content-center">Copied</div>
 
 <div data-simplebar>
     <div class="d-flex flex-row justify-content-between p-2 ms-2 me-2">
@@ -511,7 +511,7 @@
                                                             {
                                                                 case Models.StreamStatus.OK:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-success" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
+                                                                        <a class="btn btn-sm badge bg-success" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;"
                                                                            data-toggle="tooltip" title="<img src='./thumbnails/@(dev.UUID)/stream_@(i)__1.jpeg' class='img-thumbnail' style='width:100% !important; height:auto !important;'>">
                                                                             @dev.Streams[i].URI
                                                                         </a>
@@ -519,14 +519,14 @@
                                                                     break;
                                                                 case Models.StreamStatus.ERROR:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-danger" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                        <a class="btn btn-sm badge bg-danger" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
                                                                     </div>
                                                                     break;
                                                                 default:
                                                                     <div class="col-lg-8">
-                                                                        <a class="btn btn-sm badge bg-warning" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
+                                                                        <a class="btn btn-sm badge bg-warning" onclick="myFunction()" data-stream="@dev.Streams[i].URI" style="white-space: unset !important;">
                                                                             @dev.Streams[i].URI
                                                                         </a>
                                                                     </div>
