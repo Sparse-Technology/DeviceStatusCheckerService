@@ -6,11 +6,12 @@ import { CustomTagify } from "./Classes/CustomTagify";
 import hljs from "highlight.js";
 import { jsonrepair } from "jsonrepair";
 
-
-
 // GLOBAL VARIABLES
 var jsonDeviceArray = [];
 var jsonStringCopy = "";
+var errorNotifColor = "#d72a6f";
+var successNotifColor = "#20ad6b";
+var neutralNotifColor = "#8f6ac4";
 
 $(document).ready(function () {
     // TAGIFY RELATED EVENTS
@@ -194,9 +195,11 @@ window.exportSelectedDevices = function () {
             console.error("Export error:", textStatus, errorThrown);
 
             if (xhr.responseJSON && xhr.responseJSON.error) {
-                alert("Export error: " + xhr.responseJSON.error);
+                notificate("notif", "Export error: " + xhr.responseJSON.error, errorNotifColor);
+                //alert("Export error: " + xhr.responseJSON.error);
             } else {
-                alert("Export error occurred.");
+                notificate("notif", "Export error occurred.", errorNotifColor);
+                //alert("Export error occurred.");
             }
         },
     });
@@ -248,9 +251,11 @@ window.exportSelectedDevicesAdvanced = function () {
             console.error("Export error:", textStatus, errorThrown);
 
             if (xhr.responseJSON && xhr.responseJSON.error) {
-                alert("Export error: " + xhr.responseJSON.error);
+                notificate("notif", "Export error: " + xhr.responseJSON.error, errorNotifColor);
+                //alert("Export error: " + xhr.responseJSON.error);
             } else {
-                alert("Export error occurred.");
+                notificate("notif", "Export error occurred.", errorNotifColor);
+                //alert("Export error occurred.");
             }
         },
     });
@@ -356,31 +361,23 @@ window.refreshPage = function () {
     location.reload(true);
 };
 
-//window.copyDevicesJSON = function () {
-//    navigator.clipboard
-//        .writeText(jsonStringCopy)
-//        .then(() => {
-//            console.log(jsonStringCopy);
-//            alert("Content is copied to clipboard");
-//        })
-//        .catch((error) => {
-//            alert("Unable to copy the content", error);
-//        });
-//};
-
 
 window.copyDevicesJSON = function () {
+    // Check if jsonStringCopy is null or empty
+    if (!jsonStringCopy || jsonStringCopy.trim() === '') {
+        notificate("notif", "No content to copy", neutralNotifColor);
+        return;
+    }
+
     // Navigator clipboard api needs a secure context (https)
-    if (navigator.clipboard && window.isSecureContext ) {
+    if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard
             .writeText(jsonStringCopy)
             .then(() => {
-                console.log(jsonStringCopy);
-                notificateStream();
-                //alert("Content is copied to clipboard");
+                notificate("notif", "Copied", successNotifColor);
             })
             .catch((error) => {
-                alert("Unable to copy the content", error);
+                notificate("notif", "Unable to copy the content", errorNotifColor);
             });
     } else {
         // Use the 'out of viewport hidden text area' trick
@@ -396,7 +393,7 @@ window.copyDevicesJSON = function () {
 
         try {
             document.execCommand('copy');
-            notificateStream();
+            notificate("notif", "Copied", successNotifColor);
         } catch (error) {
             console.error(error);
         } finally {
@@ -411,12 +408,10 @@ document.addEventListener("DOMContentLoaded", function () {
     copyButtons.forEach(function (button) {
         button.addEventListener("click", function () {
             var streamData = button.getAttribute("data-stream");
-
             navigator.clipboard
                 .writeText(streamData)
                 .then(() => {
-                    console.log(streamData);
-                    notificateStream();
+                    notificate("notif", "Copied", successNotifColor);
                 })
                 .catch((error) => {
                     console.log(error)
@@ -425,8 +420,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-window.notificateStream = function () {
-    var x = document.getElementById("streamNotif");
+window.notificate = function (elementId, notifText, hexColorCode) {
+    var x = document.getElementById(elementId);
+    x.textContent = notifText;
+    x.style.backgroundColor = hexColorCode;
     x.className = "show";
     setTimeout(function () { x.className = x.className.replace("show", ""); }, 2500);
 }
