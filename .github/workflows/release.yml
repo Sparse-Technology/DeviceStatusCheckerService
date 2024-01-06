@@ -1,13 +1,12 @@
-name: .NET
+name: release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+    - 'v*'
 
 jobs:
-  build:
+  release:
     name: Build and publish for all platforms
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +27,12 @@ jobs:
         cd wwwroot/js/
         npm run build
 
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
+    - name: Create dist
+      run: make dist
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v3
+      with:
+        name: publish_dist
+        path: bin/publish_dist.tar.gz
+        retention-days: 5
