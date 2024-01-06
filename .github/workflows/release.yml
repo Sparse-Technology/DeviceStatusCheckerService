@@ -30,9 +30,17 @@ jobs:
     - name: Create dist
       run: make dist
 
-    - name: 'Upload Artifact'
+    - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: publish_dist
         path: bin/publish_dist.tar.gz
         retention-days: 5
+
+    - name: Upload Assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          bin/publish_dist.tar.gz
+          LICENSE
