@@ -279,7 +279,7 @@
 
     @* Camera Cards Body *@
     <div id="cameraCardsBody" class="container-fluid" style="font-size: small; padding-top: 2rem">
-        <div class="d-flex flex-wrap">
+        <div id="sortedCameraCards" class="d-flex flex-wrap">
             @* Getting Model.Devices *@
             @foreach (var dev in @Model.Devices.OrderBy(d => d.DeviceActiveStatus))
             {
