@@ -126,6 +126,7 @@
                                         <!-- Adjust column classes as needed -->
                                         <div class="d-flex flex-row">
                                             <div class="form-check">
+
                                                 <input type="checkbox" class="btn-check" id="@($"btncheck_{property.Name}")" autocomplete="off" onclick="toggleRenameKeys()">
                                                 <label class="btn btn-outline-secondary" for="@($"btncheck_{property.Name}")">@property.Name</label>
                                             </div>
@@ -279,7 +280,7 @@
 
     @* Camera Cards Body *@
     <div id="cameraCardsBody" class="container-fluid" style="font-size: small; padding-top: 2rem">
-        <div class="d-flex flex-wrap">
+        <div id="sortedCameraCards" class="d-flex flex-wrap">
             @* Getting Model.Devices *@
             @foreach (var dev in @Model.Devices.OrderBy(d => d.DeviceActiveStatus))
             {
