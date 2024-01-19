@@ -25,6 +25,9 @@ $(document).ready(function () {
 
     $('[data-bs-toggle="collapse"]').collapse();
 
+
+    sortAndAppendContainers();
+
     $('#cameraCardsBody .form-check input[type="checkbox"]').on(
         "change",
         function () {
@@ -55,15 +58,34 @@ const customTagify = new CustomTagify(
 window.toggleExportMenuVisibility = function () {
     // Check if at least one checkbox is checked on the entire page
     var collapseOne = $("#collapseOne");
+    var checkedCheckboxes = $('#cameraCardsBody .form-check input[type="checkbox"]:checked');
 
-    if (
-        $('#cameraCardsBody .form-check input[type="checkbox"]:checked').length > 0
-    ) {
+    console.log(checkedCheckboxes.length);
+
+    // Get numbers of checked EXPORT buttons in device bodies
+    if (checkedCheckboxes.length > 0) {
         collapseOne.collapse("show");
     } else {
         collapseOne.collapse("hide");
     }
 };
+
+
+// Sorting camera cards by height
+window.sortAndAppendContainers = function(){
+    var containers = $('[data-card="container"]');
+
+    containers.sort(function (a, b) {
+        // Compare the heights of the camera containers in descending order
+        var heightA = $(a).find('[data-card="cameraContainer"]').height();
+        var heightB = $(b).find('[data-card="cameraContainer"]').height();
+
+        return heightA - heightB;
+    });
+
+    // Append the sorted camera containers back to the parent containers with data-card="container"
+    $('#sortedCameraCards').empty().append(containers);
+}
 
 window.resetLabels = function () {
     $('#dynamicKeys input[type="checkbox"]').prop("checked", false).change();
