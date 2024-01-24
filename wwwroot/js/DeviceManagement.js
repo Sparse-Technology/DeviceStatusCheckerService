@@ -16,7 +16,12 @@ class DeviceManagement {
     "data-name",
     "accordion-menu-container"
   );
-  #cameraCardsBodyContainer = "";
+
+  #cameraCardsBodyContainer = $("<div>")
+    .attr("id", "cameraCardsBody")
+    .attr("data-name", "camera-cards-body-container")
+    .addClass("container-fluid")
+    .css({ "font-size": "small", "padding-top": "2rem" });
 
   //Behaviour global variables
   #jsonDeviceArray = [];
@@ -25,9 +30,47 @@ class DeviceManagement {
   #successNotifColor = "#20ad6b";
   #neutralNotifColor = "#8f6ac4";
 
-  // Variable to track the state of selection
-  #templateInputGroup = $("#templateInputGroup");
-  #templateInput = $("#templateInput");
+  //Filter Menu Variables
+  #filterInput = $("<input>")
+    .attr({
+      id: "tagify-filter-bar",
+      type: "text",
+      class: "form-control form-control-solid w-25",
+      "aria-label": "",
+    })
+    .on("keyup", () => this.filterPageTagify());
+
+  //Accordion Menu Variables
+  #accordionMenuButton = $("<button>")
+    .addClass("d-flex justify-content-center border-0 p-0 m-0 btn btn-primary")
+    .attr({
+      type: "button",
+      "data-bs-toggle": "collapse",
+      "data-bs-target": "#exportAccordionBody",
+      "aria-expanded": "true",
+      "aria-controls": "exportAccordionBody",
+    });
+
+  #accordionBody = $("<div>").attr({
+    id: "exportAccordionBody",
+    class: "accordion-collapse collapse hide",
+    "aria-labelledby": "headingOne",
+    "data-bs-parent": "#accordionExample",
+  });
+
+  #dynamicKeysContainer = $("<div>")
+    .attr("id", "dynamicKeys")
+    .addClass("row g-2 p-3 col-6");
+
+  #dynamicKeysContainerCheckboxes = this.#dynamicKeysContainer.find(
+    'input[type="checkbox"]'
+  );
+
+  #codeForHighlightJs = $("<code>").attr({
+    class: "language-json",
+    style: "max-height:400px; overflow-y: auto;",
+  });
+
   #isAdvancedExportMode = false;
 
   #exportButton = $("<button>")
@@ -40,11 +83,30 @@ class DeviceManagement {
       '<i class="fa-solid fa-arrow-right-from-bracket"></i> Export Devices'
     );
 
+  // Simple Export Input Container
+  #templateInput = $("<textarea>").addClass("form-control").attr({
+    placeholder: "Template",
+    rows: "15",
+  });
+
+  // Advanced Export Input Container
+  #advancedExportInputContainer = $("<div>").addClass(
+    "d-none row g-2 p-2 col-6 mb-0 mt-0 p-0"
+  );
+
+  //CreateDeviceModal Elements
+  #createDeviceModalContainer = $("<div>").addClass("modal fade").attr({
+    // id: "createDeviceModal",
+    tabindex: "-1",
+    role: "dialog",
+    "aria-labelledby": "exampleModalCenterTitle",
+    "aria-hidden": "true",
+    "data-name": "modal-create-device-container",
+  });
+
   constructor(containerId, model) {
     this.#containerId = containerId;
     this.#model = model;
-    console.log(this.#containerId);
-    console.log(this.#model);
     this.initElements();
     this.initBehaviours();
     this.initDocumentReadyBehaviours();
@@ -59,14 +121,11 @@ class DeviceManagement {
     this.#accordionMenuContainer.appendTo(this.#filterMenuContainer);
     this.createAccordionMenuContainer();
     this.createAccordionBodyContainer();
-    this.createCreateDeviceModal();
+    this.createCreateDeviceModalElements();
     // this.createPublishDeviceModal();
     this.createCameraCardsBody();
 
-    const customTagify = new CustomTagify(
-      "#tagify-filter-bar",
-      `[dataFilter]:visible`
-    );
+    new CustomTagify(this.#filterInput, `[dataFilter]:visible`);
   }
 
   initBehaviours() {
@@ -74,11 +133,8 @@ class DeviceManagement {
     this.initializeTemplateInputValue();
   }
 
-  //__________________________________________________________________________________________________
-
-  //NAVBAR ELEMENT CREATION
+  //NAVBAR ELEMENTS CREATION
   createNavbarElements() {
-    console.log("createNavbarElements started");
     const self = this;
     // Navbar container
     this.#navbarContainer = $("<div>").attr("data-name", "navbar-container");
@@ -96,12 +152,14 @@ class DeviceManagement {
     // Brand
     const brandContainer = $("<div>").addClass("fs-3 text-light navbar-brand");
 
-    const brandImage = $("<img>").attr({
-      src: "img/favicon.png",
-      alt: "sparse-logo",
-      width: "65px",
-      height: "75px",
-    });
+    const brandImage = $("<img>")
+      .attr({
+        src: "img/favicon.png",
+        alt: "sparse-logo",
+        width: "65px",
+        height: "75px",
+      })
+      .on("click", () => this.refreshPage());
 
     const brandLink = $("<a>")
       .addClass("navbar-brand custom-navbar-brand")
@@ -178,8 +236,7 @@ class DeviceManagement {
     location.reload(true);
   };
 
-  //__________________________________________________________________________________________________
-  //NOTIF CREATIONS
+  //NOTIF ELEMENTS CREATIONS
   //TODO: Creates notif elements
   createNotifElements() {
     const notifContainer = $("<div>")
@@ -189,8 +246,7 @@ class DeviceManagement {
     $(`#${this.#containerId}`).append(notifContainer);
   }
 
-  //__________________________________________________________________________________________________
-  //FILTER MENU CREATIONS
+  //FILTER MENU ELEMENTS CREATIONS
   //TODO: Creates modals
   createFilterElements() {
     // Create main container
@@ -200,14 +256,6 @@ class DeviceManagement {
 
     // Create Tagify Filter Bar with Button
     const filterBar = $("<div>").addClass("d-flex input-group w-50");
-    const filterInput = $("<input>")
-      .attr({
-        id: "tagify-filter-bar",
-        type: "text",
-        class: "form-control form-control-solid w-25",
-        "aria-label": "",
-      })
-      .on("keyup", this.filterPageTagify);
 
     // Create Tagify Filter Button
     const filterButton = $("<button>")
@@ -221,26 +269,24 @@ class DeviceManagement {
       .on("click", this.resetCameras)
       .html(`<i class="fa-regular fa-square-minus fa-lg"></i> Unselect All`);
 
-    filterBar.append(filterInput, filterButton, resetCamerasButton);
+    filterBar.append(this.#filterInput, filterButton, resetCamerasButton);
 
     // Add Tagify Filter Bar to the main container
     filterSubContainer.append(filterBar);
 
     // Add additional content (if any)
-    const createDeviceModalContainer = $("<div>").html(
+    const createDeviceModalContainerButton = $("<div>").html(
       $("<button>")
         .addClass("btn btn-dark")
-        .on("click", this.showCreateDeviceModal)
+        .on("click", () => this.showCreateDeviceModal())
         .text("Create Device")
     );
 
-    filterSubContainer.append(createDeviceModalContainer);
+    filterSubContainer.append(createDeviceModalContainerButton);
     this.#filterMenuContainer.append(filterSubContainer);
   }
 
-  //__________________________________________________________________________________________________
-  //Accordion Menu Creation
-  //TODO: Creates modals
+  //ACCORDION MENU ELEMENTS CREATION
   createAccordionMenuContainer() {
     // Create accordion header
     const accordionHeaderContainer = $("<div>")
@@ -249,38 +295,18 @@ class DeviceManagement {
         "bg-secondary border-bottom border-dark shadow p-1 mb-3 rounded"
       );
 
-    const button = $("<button>")
-      .addClass(
-        "d-flex justify-content-center border-0 p-0 m-0 btn btn-primary"
-      )
-      .attr({
-        type: "button",
-        "data-bs-toggle": "collapse",
-        "data-bs-target": "#collapseOne",
-        "aria-expanded": "true",
-        "aria-controls": "collapseOne",
-      });
-
     const icon = $("<i>").addClass(
       "fas fa-chevron-down fa-xl bg-secondary p-0 border-0"
     );
 
-    button.append(icon);
-    accordionHeaderContainer.append(button);
+    this.#accordionMenuButton.append(icon);
+    accordionHeaderContainer.append(this.#accordionMenuButton);
 
     // Create accordion content
     this.#accordionMenuContainer.append(accordionHeaderContainer);
   }
 
   createAccordionBodyContainer() {
-    // Accordion Body Container
-    const accordionBody = $("<div>").attr({
-      id: "collapseOne",
-      class: "accordion-collapse collapse hide",
-      "aria-labelledby": "headingOne",
-      "data-bs-parent": "#accordionExample",
-    });
-
     // Main Card
     const mainCard = $("<div>").addClass("card bg-light");
 
@@ -308,63 +334,51 @@ class DeviceManagement {
       "d-flex flex-row justify-content-between ms-2 me-2"
     );
 
-    // Dynamic Keys Container
-    const dynamicKeysContainer = $("<div>")
-      .attr("id", "dynamicKeys")
-      .addClass("row g-2 p-3 col-6");
-
     // Reset Buttons Container
-    const resetCamerasButtonresetButtonsContainer = $("<div>").addClass(
+    const resetInputsContainer = $("<div>").addClass(
       "d-flex justify-content-end mt-0 p-0 btn-group"
     );
 
-    dynamicKeysContainer.append(resetCamerasButtonresetButtonsContainer);
-
-    // Reset Labels Button
-    const resetLabelsButton = $("<button>")
-      .attr({
-        type: "submit",
-        id: "resetLabelsButton",
-        class: "btn btn-secondary mb-2",
-      })
-      .html(
-        '<i class="fa-solid fa-tags"></i> Reset Labels <i class="fa-solid fa-rotate-left"></i>'
-      )
-      .on("click", this.resetLabels);
+    this.#dynamicKeysContainer.append(resetInputsContainer);
 
     // Reset Fields Button
     const resetFieldsButton = $("<button>")
       .attr({
         type: "submit",
-        id: "resetFieldsButton",
         class: "btn btn-secondary bg-gray mb-2",
       })
       .html(
         '<i class="fa-solid fa-rectangle-list"></i> Reset Fields <i class="fa-solid fa-rotate-left"></i>'
       )
-      .on("click", this.resetFields);
+      .on("click", () => this.resetFields());
 
     // Toggle All Labels Button
     const selectAllLabelsButton = $("<button>")
       .attr({
         type: "submit",
-        id: "toggleSelectAllLabels",
         class: "btn btn-secondary bg-gray mb-2",
       })
-      .html('<i class="fa-regular fa-square-check"></i> Select Labels')
-      .on("click", this.SelectLabels);
+      .html('<i class="fa-regular fa-square-check"></i> Select All')
+      .on("click", () => this.selectLabels(true));
 
-    resetCamerasButtonresetButtonsContainer.append(
-      resetLabelsButton,
+    // Toggle All Labels Button
+    const unSelectAllLabelsButton = $("<button>")
+      .attr({
+        type: "submit",
+        class: "btn btn-secondary bg-gray mb-2",
+      })
+      .html('<i class="fa-regular fa-square-check"></i> Unselect All')
+      .on("click", () => this.selectLabels(false));
+
+    resetInputsContainer.append(
       resetFieldsButton,
-      selectAllLabelsButton
+      selectAllLabelsButton,
+      unSelectAllLabelsButton
     );
 
     // Dynamic Keys Property Creation
-    // (Note: This part will depend on your actual property names and may need adjustments)
-    // Iterate through properties of DeviceModel
-    for (const property of Object.getOwnPropertyNames(jsonModel[0])) {
-      // Create a column for each property
+    // (Note: This part will depend on actual property names and may need adjustments)
+    for (let property of Object.getOwnPropertyNames(jsonModel[0])) {
       const propertyColumn = $("<div>").addClass("col-sm-12 col-xl-6 mb-1");
 
       // Form a row with checkboxes, labels, and input fields
@@ -377,7 +391,6 @@ class DeviceManagement {
           class: "btn-check",
           id: `btncheck_${property}`,
           autocomplete: "off",
-          // onclick: "toggleRenameKeys()",
         })
         .on("click", this.toggleRenameKeys);
 
@@ -400,16 +413,15 @@ class DeviceManagement {
         disabled: true,
       });
 
-      const resetInput = $("<button>")
+      const resetInputElement = $("<button>")
         .attr({
           type: "button",
           class: "btn btn-outline-secondary",
-          // onclick: `resetInput('${property}')`,
         })
         .html('<i class="fa-solid fa-rotate-left"></i>')
-        .on("click", this.resetInput(`${property}`));
+        .on("click", () => this.resetInput(property));
 
-      inputField.append(input, resetInput);
+      inputField.append(input, resetInputElement);
 
       propertyRow.append(
         checkbox,
@@ -419,19 +431,12 @@ class DeviceManagement {
       );
 
       propertyColumn.append(propertyRow);
-      //   dynamicKeysContainer.append(resetCamerasButtonresetButtonsContainer)
-      dynamicKeysContainer.append(propertyColumn);
+      this.#dynamicKeysContainer.append(propertyColumn);
     }
 
-    // Advanced Export Options Container
-    const advancedExportOptionsContainer = $("<div>")
-      .attr("id", "advancedExportInput")
-      .addClass("d-none row g-2 p-2 col-6 mb-0 mt-0 p-0");
     const formForAdvancedExport = $("<form>").addClass("mt-0 p-0");
 
-    const templateInputGroup = $("<div>")
-      .addClass("form-group")
-      .attr("id", "templateInputGroup");
+    const templateInputGroup = $("<div>").addClass("form-group");
 
     const templateInputButton = $("<button>")
       .attr({
@@ -441,15 +446,9 @@ class DeviceManagement {
       })
       .text("Input Template");
 
-    const templateInput = $("<textarea>").addClass("form-control").attr({
-      id: "templateInput",
-      placeholder: "Template",
-      rows: "15",
-    });
-
-    templateInputGroup.append(templateInputButton, templateInput);
+    templateInputGroup.append(templateInputButton, this.#templateInput);
     formForAdvancedExport.append(templateInputGroup);
-    advancedExportOptionsContainer.append(formForAdvancedExport);
+    this.#advancedExportInputContainer.append(formForAdvancedExport);
 
     // Advanced Export Output Container
     const advancedExportOutputContainer = $("<div>")
@@ -473,34 +472,27 @@ class DeviceManagement {
 
     const copyDevicesJSONButton = $("<button>")
       .attr({
-        id: "copyDevicesJSONButton",
         type: "button",
         class: "btn btn-outline-warning text-dark mb-2",
-        // onclick: "copyDevicesJSON()",
       })
-      .html('<i class="fa-solid fa-copy"></i> Copy')
+      .html("Copy")
       .on("click", this.copyDevicesJSON.bind(this));
 
+    //Will be reedited
     const publishButton = $("<button>")
       .attr({
         id: "publishButton",
         type: "button",
         class: "btn btn-outline-warning text-dark mb-2",
-        // onclick: "showPublishDeviceModal()",
       })
-      .html('<i class="fa-solid fa-square-share-nodes"></i> Publish')
+      .html("Publish")
       .on("click", this.showPublishDeviceModal);
 
     const highlightJsContainer = $("<div>");
 
     const preElement = $("<pre>").addClass("language-json");
-    const codeForHighlightJs = $("<code>")
-      .attr({
-        id: "templateOutput",
-        class: "language-json",
-        style: "max-height:400px; overflow-y: auto;",
-      })
-      .appendTo(preElement);
+
+    this.#codeForHighlightJs.appendTo(preElement);
 
     preElement.css({
       "max-height": "400px",
@@ -517,13 +509,13 @@ class DeviceManagement {
 
     // Append all elements to the Accordion Body
     innerContainer.append(
-      dynamicKeysContainer,
-      advancedExportOptionsContainer,
+      this.#dynamicKeysContainer,
+      this.#advancedExportInputContainer,
       advancedExportOutputContainer
     );
     cardContentContainer.append(innerContainer);
     mainCard.append(cardContentContainer);
-    accordionBody.append(mainCard);
+    this.#accordionBody.append(mainCard);
 
     // Export Button Container
     const exportButtonContainer = $("<div>").addClass(
@@ -532,53 +524,47 @@ class DeviceManagement {
     exportButtonContainer.append(this.#exportButton);
 
     // Append the Accordion Body to the desired container
-    this.#accordionMenuContainer.append(accordionBody, exportButtonContainer);
+    this.#accordionMenuContainer.append(
+      this.#accordionBody,
+      exportButtonContainer
+    );
   }
 
-  createCreateDeviceModal() {
-    // Modal Container
-    const modalContainer = $("<div>").addClass("modal fade").attr({
-      id: "createDeviceModal",
-      tabindex: "-1",
-      role: "dialog",
-      "aria-labelledby": "exampleModalCenterTitle",
-      "aria-hidden": "true",
-      "data-name": "modal-create-device-container",
-    });
-
+  //Will be reedited
+  createCreateDeviceModalElements() {
     // Modal Dialog
-    const modalDialog = $("<div>")
+    const createDeviceModalDialog = $("<div>")
       .addClass("modal-dialog modal-dialog-centered")
       .attr("role", "document");
 
     // Modal Content
-    const modalContent = $("<div>").addClass("modal-content");
+    const createDeviceModalContent = $("<div>").addClass("modal-content");
 
     // Modal Header
-    const modalHeader = $("<div>").addClass("modal-header");
-    const modalTitle = $("<h5>")
+    const createDeviceModalHeader = $("<div>").addClass("modal-header");
+    const createDeviceModalTitle = $("<h5>")
       .addClass("modal-title")
       .attr("id", "exampleModalLongTitle")
       .text("Create Device");
-    modalHeader.append(modalTitle);
+    createDeviceModalHeader.append(createDeviceModalTitle);
 
     // Modal Body
-    const modalBody = $("<div>")
+    const createDeviceModalBody = $("<div>")
       .addClass("modal-body")
       .attr("id", "modalCreateDeviceBody");
     const underConstruction = $("<div>").html(
       '<i class="fa-solid fa-person-digging fa-xl"></i> Under Construction'
     );
-    modalBody.append(underConstruction);
+    createDeviceModalBody.append(underConstruction);
 
     // Modal Footer
-    const modalFooter = $("<div>").addClass("modal-footer");
+    const createDeviceModalFooter = $("<div>").addClass("modal-footer");
     const buttonGroup = $("<div>");
     const closeButton = $("<button>")
       .addClass("btn btn-secondary")
       .attr({
         type: "button",
-        "data-dismiss": "modal",
+        "data-dismiss": "modalLabel",
       })
       .text("Close");
     const createDeviceButton = $("<button>")
@@ -587,17 +573,22 @@ class DeviceManagement {
       .text("Create Device");
 
     buttonGroup.append(closeButton, createDeviceButton);
-    modalFooter.append(buttonGroup);
+    createDeviceModalFooter.append(buttonGroup);
 
     // Assemble the modal structure
-    modalContent.append(modalHeader, modalBody, modalFooter);
-    modalDialog.append(modalContent);
-    modalContainer.append(modalDialog);
+    createDeviceModalContent.append(
+      createDeviceModalHeader,
+      createDeviceModalBody,
+      createDeviceModalFooter
+    );
+    createDeviceModalDialog.append(createDeviceModalContent);
+    this.#createDeviceModalContainer.append(createDeviceModalDialog);
 
     // Append the modal container to the body
-    this.#accordionMenuContainer.append(modalContainer);
+    this.#accordionMenuContainer.append(this.#createDeviceModalContainer);
   }
 
+  //Will be reedited
   //   createPublishDeviceModal() {
   //     // Modal Container
   //     const modalContainer = $("<div>").addClass("modal fade").attr({
@@ -721,17 +712,10 @@ class DeviceManagement {
   //     this.#accordionMenuContainer.append(modalContainer);
   //   }
 
-  //__________________________________________________________________________________________________
   //DEVICECARD CREATIONS
   //TODO: Creates a device status container
 
   createCameraCardsBody() {
-    this.#cameraCardsBodyContainer = $("<div>")
-      .attr("id", "cameraCardsBody")
-      .attr("data-name", "camera-cards-body-container")
-      .addClass("container-fluid")
-      .css({ "font-size": "small", "padding-top": "2rem" });
-
     this.#cameraCardsBodyContainer.empty();
 
     const sortedCameraCards = $("<div>")
@@ -758,9 +742,9 @@ class DeviceManagement {
       .addClass("col-sm-6 col-md-6 col-lg-4 col-xl-4 p-1")
       .attr("data-card", "container");
 
-    const cameraContainer = $("<div>").addClass(
-      "card d-flex flex-row justify-content-between"
-    );
+    const cameraContainer = $("<div>")
+      .addClass("card d-flex flex-row justify-content-between")
+      .attr("data-card", "camera-container");
 
     //Buradaki card-body div hiyerarşisini düzenlemeye gerek olabilir
     const cardBody = $("<div>").addClass("card-body");
@@ -835,7 +819,7 @@ class DeviceManagement {
           case "unknown":
             return "text-warning";
           default:
-            return "tex-secondary";
+            return "text-secondary";
         }
       })
     );
@@ -871,13 +855,10 @@ class DeviceManagement {
       });
 
     thumbnailContainer.append(thumbnailImage);
-    // thumbnailContainer.append(this.createCardExportButton(dev));
     return thumbnailContainer;
   }
 
   createCardExportButton(dev) {
-    // const cardExportButtonContainer = $("<div>").addClass("d-flex flex-column");
-
     const formCheck = $("<div>").addClass("form-check align-self-end p-0 mt-2");
 
     const checkbox = $("<input>").attr({
@@ -886,6 +867,7 @@ class DeviceManagement {
       id: `checkbox_${dev.uuid}`,
     });
 
+    const exportIcon = $("<i>").addClass("bi bi-1-circle -success");
     const label = $("<label>")
       .addClass(
         "form-check-label font-weight-bold text-dark btn btn-outline-warning col-12 m-0 p-0 text-center"
@@ -893,11 +875,10 @@ class DeviceManagement {
       .attr({
         for: `checkbox_${dev.uuid}`,
       })
-      .html('Add Export <i class="fa-solid fa-file-export"></i>');
+      .html("Add Export")
+      .append(exportIcon);
 
     formCheck.append(checkbox, label);
-    // cardExportButtonContainer.append(formCheck);
-    // return cardExportButtonContainer;
     return formCheck;
   }
 
@@ -1002,50 +983,41 @@ class DeviceManagement {
     return streamContainer;
   }
 
-  //__________________________________________________________________________________________________
   //BEHAVIOURS
   initDocumentReadyBehaviours() {
     var self = this;
-    // $('[data-toggle="tooltip"]').tooltip({
-    //   animated: "fade",
-    //   placement: "bottom",
-    //   html: true,
-    // });
-
-    // this.toggleSelectLabels();
 
     this.sortAndAppendContainers();
 
-    $('#cameraCardsBody .form-check input[type="checkbox"]').on(
-      "change",
-      function () {
+    this.#cameraCardsBodyContainer
+      .find('.form-check input[type="checkbox"]')
+      .on("change", function () {
         self.toggleExportMenuVisibility();
-      }
-    );
+      });
 
     // Closing modals
     $('[data-dismiss="modalLabel"]').on("click", () => {
       $("#exportDeviceModal").modal("hide");
     });
 
-    $('[data-dismiss="modalCreateDevice"]').on("click", () => {
-      $("#createDeviceModal").modal("hide");
-    });
+    // Will be redited
+    // $('[data-dismiss="modalcameraContainerCreateDevice"]').on("click", () => {
+    //   this.#createDeviceModalContainer.modal("hide");
+    // });
 
-    $('[data-dismiss="modalPublishDevice"]').on("click", () => {
-      $("#publishDeviceModal").modal("hide");
-    });
+    //Publish part will be edited
+    // $('[data-dismiss="modalPublishDevice"]').on("click", () => {
+    //   $("#publishDeviceModal").modal("hide");
+    // });
   }
 
   // Sorting camera cards by height
   sortAndAppendContainers() {
     var containers = $('[data-card="container"]');
-
     containers.sort(function (a, b) {
       // Compare the heights of the camera containers in descending order
-      var heightA = $(a).find('[data-card="cameraContainer"]').height();
-      var heightB = $(b).find('[data-card="cameraContainer"]').height();
-
+      var heightA = $(a).find('[data-card="camera-container"]').height();
+      var heightB = $(b).find('[data-card="camera-container"]').height();
       return heightA - heightB;
     });
 
@@ -1055,35 +1027,39 @@ class DeviceManagement {
   // EXPORT PART
   toggleExportMenuVisibility() {
     // Check if at least one checkbox is checked on the entire page
-    var collapseOne = $("#collapseOne");
-    var checkedCheckboxes = $(
-      '#cameraCardsBody .form-check input[type="checkbox"]:checked'
+    var exportAccordionBody = $("#exportAccordionBody");
+
+    var checkedCheckboxes = this.#cameraCardsBodyContainer.find(
+      '.form-check input[type="checkbox"]:checked'
     );
 
     // Get numbers of checked EXPORT buttons in device bodies
     if (checkedCheckboxes.length > 0) {
-      collapseOne.collapse("show");
+      exportAccordionBody.collapse("show");
     } else {
-      collapseOne.collapse("hide");
+      exportAccordionBody.collapse("hide");
     }
   }
 
-  resetLabels() {
-    $('#dynamicKeys input[type="checkbox"]').prop("checked", false).change();
-    $("[id^=btnRenameInput_]").val(null);
-    $("[id^=btnRenameInput_]").prop("disabled", true);
+  resetFields() {
+    this.resetRenameInputs();
   }
 
-  resetFields() {
-    $("[id^=btnRenameInput_]").val(null);
-    $("[id^=btnRenameInput_]").prop("disabled", true);
+  resetCheckboxes() {
+    this.#dynamicKeysContainerCheckboxes
+      .find('input[type="checkbox"]')
+      .prop("checked", false)
+      .change();
+  }
+
+  resetRenameInputs() {
+    $("[id^=btnRenameInput_]").val(null).prop("disabled", true);
   }
 
   resetCameras() {
-    $('#cameraCardsBody .form-check input[type="checkbox"]').prop(
-      "checked",
-      false
-    );
+    this.#cameraCardsBodyContainer
+      .find('.form-check input[type="checkbox"]')
+      .prop("checked", false);
   }
 
   toggleRenameKeys() {
@@ -1100,29 +1076,28 @@ class DeviceManagement {
     });
   }
 
-  // Function to toggle selection
-  SelectLabels() {
-    let isAllSelected = false;
-
+  toggleLabels(select) {
     const checkboxes = $('#dynamicKeys input[type="checkbox"]');
+    checkboxes.prop("checked", select).change();
+    const btnRenameInputs = $("[id^=btnRenameInput_]");
+    select
+      ? btnRenameInputs.prop("disabled", false)
+      : btnRenameInputs.prop("disabled", true);
+  }
 
-    // Toggle the state for all checkboxes
-    checkboxes.prop("checked", !isAllSelected).change();
-
-    // Reset the values of rename inputs and disable them
-    $("[id^=btnRenameInput_]").val(null).prop("disabled", true);
-
-    // Toggle the state for the next click
-    isAllSelected = !isAllSelected;
+  selectLabels(isSelected) {
+    this.toggleLabels(isSelected);
   }
 
   exportSelectedDevices() {
     var selectedCheckboxIds = [];
-    $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
-      if ($(this).is(":checked")) {
-        selectedCheckboxIds.push(this.id.split("_")[1]);
-      }
-    });
+    this.#cameraCardsBodyContainer
+      .find('.form-check input[type="checkbox"]')
+      .each(function () {
+        if ($(this).is(":checked")) {
+          selectedCheckboxIds.push(this.id.split("_")[1]);
+        }
+      });
     var selectedDynamicKeys = [];
     var renamedKeys = [];
 
@@ -1162,14 +1137,6 @@ class DeviceManagement {
       return cleanedString;
     }
 
-    console.log("ExportSelectedDevices");
-    console.log(selectedDynamicKeys);
-    console.log(selectedCheckboxIds);
-    console.log("selectedDynamicKeysParam");
-    console.log(selectedDynamicKeysParam);
-    console.log("renamedKeysParam");
-    console.log(renamedKeysParam);
-
     // const jsonDeviceArray = this.#jsonDeviceArray;
 
     $.ajax({
@@ -1183,19 +1150,15 @@ class DeviceManagement {
           /,(\s*})|},\s*\]/g,
           (match, p1) => (p1 ? p1 : "}]")
         );
-        console.log("exportSelectedDevicesAjaxÇalıştı");
-        console.log(correctedJsonString);
 
-        // this.setJsonDeviceArray(JSON.parse(correctedJsonString));
         this.#jsonDeviceArray = JSON.parse(correctedJsonString);
 
         var jsonString = JSON.stringify(this.#jsonDeviceArray, null, 2);
         // jsonString = jsonrepair(jsonString);
         this.#jsonStringCopy = jsonString;
-
-        $("#templateOutput").removeAttr("data-highlighted");
-        $("#templateOutput").html(jsonString);
-        hljs.highlightElement(document.querySelector("#templateOutput"));
+        this.#codeForHighlightJs.removeAttr("data-highlighted");
+        this.#codeForHighlightJs.html(jsonString);
+        hljs.highlightElement(this.#codeForHighlightJs[0]);
         this.notificate("notif", "Export successful.", this.#successNotifColor);
       },
       error: (xhr, textStatus, errorThrown) => {
@@ -1219,10 +1182,9 @@ class DeviceManagement {
   }
 
   checkVisibleFilteredDevices() {
-    $('#cameraCardsBody .form-check input[type="checkbox"]:visible').prop(
-      "checked",
-      true
-    );
+    this.#cameraCardsBodyContainer
+      .find('.form-check input[type="checkbox"]:visible')
+      .prop("checked", true);
   }
 
   resetInput(propertyName) {
@@ -1232,14 +1194,15 @@ class DeviceManagement {
 
   exportSelectedDevicesAdvanced() {
     var selectedCheckboxIds = [];
-    $('#cameraCardsBody .form-check input[type="checkbox"]').each(function () {
-      if ($(this).is(":checked")) {
-        selectedCheckboxIds.push(this.id.split("_")[1]);
-      }
-    });
-    const userTemplate = $("#templateInput").val();
+    this.#cameraCardsBodyContainer
+      .find('.form-check input[type="checkbox"]')
+      .each(function () {
+        if ($(this).is(":checked")) {
+          selectedCheckboxIds.push(this.id.split("_")[1]);
+        }
+      });
+    const userTemplate = this.#templateInput.val();
     const encodedTemplate = btoa(userTemplate);
-    // console.log(this);
 
     $.ajax({
       url: `/Index?handler=ExportSelectedDevicesAdvanced&tpl=${encodedTemplate}&selectedCheckboxIdsParam=${btoa(
@@ -1247,18 +1210,15 @@ class DeviceManagement {
       )}`,
       contentType: "application/json",
       success: (result) => {
-        console.log("ADVANCED RESUUULLT");
-        console.log(result);
-
         this.#jsonDeviceArray = JSON.parse(result);
         var jsonString = JSON.stringify(this.#jsonDeviceArray, null, 2);
 
-        $("#templateOutput").removeAttr("data-highlighted");
-        $("#templateOutput").html(jsonString);
+        this.#codeForHighlightJs.removeAttr("data-highlighted");
+        this.#codeForHighlightJs.html(jsonString);
         this.#jsonStringCopy = jsonString;
 
         // You should use JS DOM selector not JQuery selector with highlight.js,
-        hljs.highlightElement(document.querySelector("#templateOutput"));
+        hljs.highlightElement(this.#codeForHighlightJs[0]);
         this.notificate("notif", "Export successful.", this.#successNotifColor);
       },
       error: (xhr, textStatus, errorThrown) => {
@@ -1270,21 +1230,18 @@ class DeviceManagement {
             "Export error: " + xhr.responseJSON.error,
             this.#errorNotifColor
           );
-          //alert("Export error: " + xhr.responseJSON.error);
         } else {
           this.notificate(
             "notif",
             "Export error occurred.",
             this.#errorNotifColor
           );
-          //alert("Export error occurred.");
         }
       },
     });
   }
 
   notificate(elementId, notifText, hexColorCode) {
-    console.log("Notif çalıştı");
     var x = document.getElementById(elementId);
     x.textContent = notifText;
     x.style.backgroundColor = hexColorCode;
@@ -1295,11 +1252,8 @@ class DeviceManagement {
   }
 
   toggleExportOptions() {
-    console.log(this);
     this.#isAdvancedExportMode = !this.#isAdvancedExportMode;
-    console.log(
-      `Export mode toggled. Advanced mode: ${this.#isAdvancedExportMode}`
-    );
+
     this.setupExportButtonMode();
     var exportOptionsButton = $("#exportOptionsButton");
     exportOptionsButton.text(
@@ -1307,12 +1261,12 @@ class DeviceManagement {
         ? "Simple Export Options"
         : "Advanced Export Options"
     );
-    $("#dynamicKeys").toggleClass("d-none");
-    $("#advancedExportInput").toggleClass("d-none");
+    this.#dynamicKeysContainer.toggleClass("d-none");
+    this.#advancedExportInputContainer.toggleClass("d-none");
   }
 
   setupExportButtonMode() {
-    this.#exportButton.off("click"); // Remove existing click handlers
+    this.#exportButton.off("click");
 
     this.#exportButton.on("click", () => {
       this.#isAdvancedExportMode
@@ -1322,7 +1276,7 @@ class DeviceManagement {
   }
 
   showCreateDeviceModal() {
-    $("#createDeviceModal").modal("show");
+    this.#createDeviceModalContainer.modal("show");
   }
 
   showPublishDeviceModal() {
@@ -1359,14 +1313,8 @@ class DeviceManagement {
     });
   }
 
-  // Template Input Visibility
-  // var templateInputGroup = $("#templateInputGroup");
-  // var templateInput = $("#templateInput");
-
   initializeTemplateInputValue() {
-    var templateInput = $("#templateInput");
-
-    templateInput.val(
+    this.#templateInput.val(
       `[
             {{ for model in models }}
                 {
@@ -1407,10 +1355,6 @@ class DeviceManagement {
             ]`
     );
   }
-
-  // refreshPage = function () {
-  //   location.reload(true);
-  // };
 
   copyDevicesJSON() {
     if (!this.#jsonStringCopy || this.#jsonStringCopy.trim() === "") {
@@ -1455,45 +1399,21 @@ class DeviceManagement {
     }
   }
 
-  // document.addEventListener("DOMContentLoaded", function () {
-  //   var copyButtons = document.querySelectorAll("[data-stream]");
-
-  //   copyButtons.forEach(function (button) {
-  //     button.addEventListener("click", function () {
-  //       var streamData = button.getAttribute("data-stream");
-  //       navigator.clipboard
-  //         .writeText(streamData)
-  //         .then(() => {
-  //           notificate("notif", "Copied", successNotifColor);
-  //         })
-  //         .catch((error) => {
-  //           console.log(error);
-  //         });
-  //     });
-  //   });
-  // });
-
   initCopyButtons() {
-    const self = this;
-    var copyButtons = document.querySelectorAll("[data-stream]");
-
-    copyButtons.forEach(function (button) {
-      button.addEventListener("click", function () {
-        var streamData = button.getAttribute("data-stream");
+    document.querySelectorAll("[data-stream]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const streamData = button.getAttribute("data-stream");
         navigator.clipboard
           .writeText(streamData)
-          .then(() => {
-            self.notificate("notif", "Copied", this.#successNotifColor);
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+          .then(() =>
+            this.notificate("notif", "Copied", this.#successNotifColor)
+          )
+          .catch((error) => console.log(error));
       });
     });
   }
 
   notificate(elementId, notifText, hexColorCode) {
-    console.log("Notif çalıştı");
     var x = document.getElementById(elementId);
     x.textContent = notifText;
     x.style.backgroundColor = hexColorCode;
@@ -1504,16 +1424,15 @@ class DeviceManagement {
   }
 }
 
-//_________________________________________________________________________________
 class CustomTagify {
   constructor(inputTargetSelector, searchedElementsSelector) {
     this.inputTargetSelector = inputTargetSelector;
     this.searchWordsArray = [];
     this.searchedElementsSelector = searchedElementsSelector;
 
-    var inputBar = document.querySelector(inputTargetSelector),
+    var inputBar = inputTargetSelector,
       // Initialize tagify to an object
-      tagify = new Tagify(inputBar, {
+      tagify = new Tagify(inputBar[0], {
         whitelist: this.extractStateUniqueWords(searchedElementsSelector),
         placeholder: "Filter",
         enforceWhitelist: false,
@@ -1536,7 +1455,6 @@ class CustomTagify {
 
   filterPageTagify(filterString, selector) {
     var filter = filterString.toLowerCase();
-    // console.log(filter);
 
     if (filter.length <= 1 && filter.length > 0) {
       return;
@@ -1550,7 +1468,6 @@ class CustomTagify {
   onTagAdded(e) {
     const addedTag = e.detail.data.value;
     this.searchWordsArray.push(addedTag);
-    console.log(this.searchWordsArray);
 
     this.searchWordsArray.forEach((filterString) =>
       this.filterPageTagify(filterString, '[data-card="container"]:visible')
@@ -1565,7 +1482,6 @@ class CustomTagify {
     const removedTag = e.detail.data.value;
 
     const index = this.searchWordsArray.findIndex((tag) => tag === removedTag);
-    console.log(this.searchWordsArray);
 
     if (index !== -1) {
       this.searchWordsArray.splice(index, 1);
