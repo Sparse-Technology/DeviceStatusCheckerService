@@ -1,10 +1,10 @@
-//import "bootstrap/dist/css/bootstrap.min.css";
-//import "highlight.js/styles/intellij-light.css";
-//import { Tooltip, Toast, Popover } from "bootstrap";
-//import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
-//import { CustomTagify } from "./Classes/CustomTagify";
-//import hljs from "highlight.js";
-//import { jsonrepair } from "jsonrepair";
+// import "bootstrap/dist/css/bootstrap.min.css";
+// import "highlight.js/styles/intellij-light.css";
+// import { Tooltip, Toast, Popover } from "bootstrap";
+// import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
+// import { CustomTagify } from "./Classes/CustomTagify";
+// import hljs from "highlight.js";
+// import { jsonrepair } from "jsonrepair";
 
 class DeviceManagement {
   //GLOBAL VARIABLES
@@ -31,14 +31,13 @@ class DeviceManagement {
   #neutralNotifColor = "#8f6ac4";
 
   //Filter Menu Variables
-  #filterInput = $("<input>")
-    .attr({
-      id: "tagify-filter-bar",
-      type: "text",
-      class: "form-control form-control-solid w-25",
-      "aria-label": "",
-    })
-    .on("keyup", () => this.filterPageTagify());
+  #filterInput = $("<input>").attr({
+    id: "tagify-filter-bar",
+    type: "text",
+    class: "form-control form-control-solid w-25",
+    "aria-label": "",
+  });
+  //.on("keyup", this.filterPageTagify);
 
   //Accordion Menu Variables
   #accordionMenuButton = $("<button>")
@@ -125,7 +124,11 @@ class DeviceManagement {
     // this.createPublishDeviceModal();
     this.createCameraCardsBody();
 
-    new CustomTagify(this.#filterInput, `[dataFilter]:visible`);
+    //new CustomTagify(this.#filterInput, `[dataFilter]:visible`);
+    const customTagify = new CustomTagify(
+      "#tagify-filter-bar",
+      `[dataFilter]:visible`
+    );
   }
 
   initBehaviours() {
@@ -260,13 +263,13 @@ class DeviceManagement {
     // Create Tagify Filter Button
     const filterButton = $("<button>")
       .addClass("btn btn-outline-warning bg-gray p-2")
-      .on("click", this.checkVisibleFilteredDevices)
+      .on("click", () => this.checkVisibleFilteredDevices())
       .html(`<i class="fa-regular fa-square-check fa-lg"></i> Select All`);
 
     // Create Reset Cameras Button
     const resetCamerasButton = $("<button>")
       .addClass("btn btn-outline-warning bg-gray p-2")
-      .on("click", this.resetCameras)
+      .on("click", () => this.resetCameras())
       .html(`<i class="fa-regular fa-square-minus fa-lg"></i> Unselect All`);
 
     filterBar.append(this.#filterInput, filterButton, resetCamerasButton);
@@ -292,7 +295,7 @@ class DeviceManagement {
     const accordionHeaderContainer = $("<div>")
       .addClass("accordion-header-container d-flex justify-content-center")
       .addClass(
-        "bg-secondary border-bottom border-dark shadow p-1 mb-3 rounded"
+        "bg-secondary border-bottom border-dark shadow p-2 mb-3 rounded"
       );
 
     const icon = $("<i>").addClass(
@@ -367,7 +370,7 @@ class DeviceManagement {
         type: "submit",
         class: "btn btn-secondary bg-gray mb-2",
       })
-      .html('<i class="fa-regular fa-square-check"></i> Unselect All')
+      .html(`<i class="fa-regular fa-square-minus fa-lg"></i> Unselect All`)
       .on("click", () => this.selectLabels(false));
 
     resetInputsContainer.append(
@@ -715,6 +718,7 @@ class DeviceManagement {
   //DEVICECARD CREATIONS
   //TODO: Creates a device status container
 
+  //CAMERA CARD ELEMENTS CREATION
   createCameraCardsBody() {
     this.#cameraCardsBodyContainer.empty();
 
@@ -867,10 +871,12 @@ class DeviceManagement {
       id: `checkbox_${dev.uuid}`,
     });
 
-    const exportIcon = $("<i>").addClass("bi bi-1-circle -success");
+    const exportIcon = $("<i>").addClass(
+      "ms-2 fa-regular fa-square-plus text-secondary"
+    );
     const label = $("<label>")
       .addClass(
-        "form-check-label font-weight-bold text-dark btn btn-outline-warning col-12 m-0 p-0 text-center"
+        "form-check-label font-weight-bold text-dark btn btn-outline-warning col-12 m-0 p-0 text-center text-secondary"
       )
       .attr({
         for: `checkbox_${dev.uuid}`,
@@ -1011,7 +1017,7 @@ class DeviceManagement {
     // });
   }
 
-  // Sorting camera cards by height
+  // TODO: Sorts the camera cards by height
   sortAndAppendContainers() {
     var containers = $('[data-card="container"]');
     containers.sort(function (a, b) {
@@ -1024,7 +1030,8 @@ class DeviceManagement {
     // Append the sorted camera containers back to the parent containers with data-card="container"
     $("#sortedCameraCards").empty().append(containers);
   }
-  // EXPORT PART
+
+  //TODO: Controls the visibility of the export menu
   toggleExportMenuVisibility() {
     // Check if at least one checkbox is checked on the entire page
     var exportAccordionBody = $("#exportAccordionBody");
@@ -1041,6 +1048,7 @@ class DeviceManagement {
     }
   }
 
+  //FILTER BEHAVIOURS
   resetFields() {
     this.resetRenameInputs();
   }
@@ -1085,10 +1093,19 @@ class DeviceManagement {
       : btnRenameInputs.prop("disabled", true);
   }
 
+  //TODO: Selects all the labels
   selectLabels(isSelected) {
     this.toggleLabels(isSelected);
   }
 
+  //TODO: Reset the input field associated with the given property name to null.
+  resetInput(propertyName) {
+    var renameInputToReset = $("#btnRenameInput_" + propertyName);
+    renameInputToReset.val(null);
+  }
+
+  //EXPORT BEHAVIOURS
+  //TODO: Exports selected devices with simple options
   exportSelectedDevices() {
     var selectedCheckboxIds = [];
     this.#cameraCardsBodyContainer
@@ -1181,17 +1198,14 @@ class DeviceManagement {
     });
   }
 
+  //TODO:// Check all visible checkboxes within the camera cards body container.
   checkVisibleFilteredDevices() {
     this.#cameraCardsBodyContainer
       .find('.form-check input[type="checkbox"]:visible')
       .prop("checked", true);
   }
 
-  resetInput(propertyName) {
-    var renameInputToReset = $("#btnRenameInput_" + propertyName);
-    renameInputToReset.val(null);
-  }
-
+  //TODO: Exports selected devices with advanced options
   exportSelectedDevicesAdvanced() {
     var selectedCheckboxIds = [];
     this.#cameraCardsBodyContainer
@@ -1241,6 +1255,9 @@ class DeviceManagement {
     });
   }
 
+  //NOTIFICATE BEHAVIOURS
+
+  //TODO: Creates a notification
   notificate(elementId, notifText, hexColorCode) {
     var x = document.getElementById(elementId);
     x.textContent = notifText;
@@ -1251,6 +1268,7 @@ class DeviceManagement {
     }, 2500);
   }
 
+  //TODO:Toggle click behavior: Advanced or standard export based on current mode.
   toggleExportOptions() {
     this.#isAdvancedExportMode = !this.#isAdvancedExportMode;
 
@@ -1265,6 +1283,7 @@ class DeviceManagement {
     this.#advancedExportInputContainer.toggleClass("d-none");
   }
 
+  //TODO:Toggle click behavior: Advanced or standard export based on current mode.
   setupExportButtonMode() {
     this.#exportButton.off("click");
 
@@ -1283,6 +1302,7 @@ class DeviceManagement {
     $("#publishDeviceModal").modal("show");
   }
 
+  //TODO: Publish part will be edited
   publishDevices() {
     var url = $("#urlInput").val();
     var username = $("#usernameInput").val();
@@ -1313,6 +1333,7 @@ class DeviceManagement {
     });
   }
 
+  //TODO: Adds scriban template to the input field
   initializeTemplateInputValue() {
     this.#templateInput.val(
       `[
@@ -1356,6 +1377,8 @@ class DeviceManagement {
     );
   }
 
+  //COPY BEHAVIOURS
+  //TODO:Copies the result of the export to the clipboard
   copyDevicesJSON() {
     if (!this.#jsonStringCopy || this.#jsonStringCopy.trim() === "") {
       this.notificate("notif", "No content to copy", this.#neutralNotifColor);
@@ -1399,6 +1422,7 @@ class DeviceManagement {
     }
   }
 
+  //TODO:Copies the stream uri to the clipboard onclick
   initCopyButtons() {
     document.querySelectorAll("[data-stream]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1413,6 +1437,7 @@ class DeviceManagement {
     });
   }
 
+  //NOTIFICATE BEHAVIOURS
   notificate(elementId, notifText, hexColorCode) {
     var x = document.getElementById(elementId);
     x.textContent = notifText;
@@ -1430,9 +1455,9 @@ class CustomTagify {
     this.searchWordsArray = [];
     this.searchedElementsSelector = searchedElementsSelector;
 
-    var inputBar = inputTargetSelector,
+    var inputBar = document.querySelector(inputTargetSelector),
       // Initialize tagify to an object
-      tagify = new Tagify(inputBar[0], {
+      tagify = new Tagify(inputBar, {
         whitelist: this.extractStateUniqueWords(searchedElementsSelector),
         placeholder: "Filter",
         enforceWhitelist: false,
@@ -1442,6 +1467,17 @@ class CustomTagify {
 
     this.tagify.on(`add`, this.onTagAdded.bind(this));
     this.tagify.on(`remove`, this.onTagRemoved.bind(this));
+
+    // Change here: Use a regular function instead of an arrow function
+    inputBar.addEventListener(
+      "keyup",
+      function () {
+        this.filterPageTagify(
+          inputBar.value,
+          '[data-card="container"]:visible'
+        );
+      }.bind(this)
+    );
   }
 
   extractStateUniqueWords(searchedElementsSelector) {
@@ -1455,6 +1491,7 @@ class CustomTagify {
 
   filterPageTagify(filterString, selector) {
     var filter = filterString.toLowerCase();
+    console.log(filter);
 
     if (filter.length <= 1 && filter.length > 0) {
       return;
