@@ -8,7 +8,7 @@ body {
   color: #ffffff; /* Change the color as needed */
 }
 
-[data-card="cameraContainer"] {
+[data-card="camera-container"] {
   width: 100%;
   box-sizing: border-box;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
@@ -16,7 +16,7 @@ body {
   transition: box-shadow 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease;
 }
 
-  [data-card="cameraContainer"]:hover {
+  [data-card="camera-container"]:hover {
       box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.3);
       border-radius: 1.5rem;
       background-color: #dcdcdc;
@@ -126,3 +126,4 @@ body {
       opacity: 0;
   }
 }
+
