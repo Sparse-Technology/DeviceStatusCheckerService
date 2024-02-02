@@ -22,8 +22,7 @@
     <script src="~/js/dist/main.bundle.js"></script>
     <script>
         var DeviceManagement = DeviceManagementLib.default;
-        const jsonModel = @Html.Raw(Json.Serialize(Model.Devices));
-        const deviceManagement = new DeviceManagement("device-checker-status-main", jsonModel);
+        const deviceManagement = new DeviceManagement("device-checker-status-main");
     </script>
 }
 
