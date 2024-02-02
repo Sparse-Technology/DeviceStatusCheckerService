@@ -9,7 +9,6 @@ import { CustomTagify } from "./CustomTagify.js";
 import { jsonrepair } from "jsonrepair";
 
 console.log("DeviceManagement.js loaded");
-console.log("ereeen");
 
 export default class DeviceManagement {
     //GLOBAL VARIABLES
@@ -113,7 +112,6 @@ export default class DeviceManagement {
     });
 
     constructor(containerId, model) {
-        console.log("ereeen2");
         this.#containerId = containerId;
         this.#model = model;
         this.initElements();
