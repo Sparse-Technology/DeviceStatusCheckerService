@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "description": "My webpack project",
-  "name": "my-webpack-project",
+  "description": "device-checker-status-desc",
+  "name": "device-checker-status",
   "scripts": {
     "build": "webpack --mode=production",
     "test": "standard && node my-tests.js"
