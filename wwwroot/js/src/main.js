@@ -9,7 +9,7 @@ import { jsonrepair } from "jsonrepair";
 // GLOBAL VARIABLES
 var jsonDeviceArray = [];
 var jsonStringCopy = "";
-var errorNotifColor = "#d72a6f"; 
+var errorNotifColor = "#d72a6f";
 var successNotifColor = "#20ad6b";
 var neutralNotifColor = "#8f6ac4";
 
@@ -31,8 +31,6 @@ $(document).ready(function () {
             toggleExportMenuVisibility();
         }
     );
-
-    sortAndAppendContainers();
 
     // Closing modals
     $('[data-dismiss="modalLabel"]').on("click", function () {
@@ -66,22 +64,6 @@ window.toggleExportMenuVisibility = function () {
         collapseOne.collapse("hide");
     }
 };
-
-// Sorting camera cards by height
-window.sortAndAppendContainers = function(){
-    var containers = $('[data-card="container"]');
-
-    containers.sort(function (a, b) {
-        // Compare the heights of the camera containers in descending order
-        var heightA = $(a).find('[data-card="cameraContainer"]').height();
-        var heightB = $(b).find('[data-card="cameraContainer"]').height();
-
-        return heightA - heightB;
-    });
-
-    // Append the sorted camera containers back to the parent containers with data-card="container"
-    $('#sortedCameraCards').empty().append(containers);
-}
 
 window.resetLabels = function () {
     $('#dynamicKeys input[type="checkbox"]').prop("checked", false).change();
