@@ -93,7 +93,7 @@ namespace DeviceStatusCheckerService.Pages
         }
 
 
-        public JsonResult OnGetExportTemplateDevices(string selectedCheckboxIdsParam, string selectedDynamicKeys, string renamedKeys)
+        public JsonResult OnGetExportSelectedDevices(string selectedCheckboxIdsParam, string selectedDynamicKeys, string renamedKeys)
         {
 
             try
@@ -184,7 +184,7 @@ namespace DeviceStatusCheckerService.Pages
         }
 
 
-        public JsonResult OnGetExportDevices(string tpl, string selectedCheckboxIdsParam)
+        public JsonResult OnGetExportSelectedDevicesAdvanced(string tpl, string selectedCheckboxIdsParam)
         {
             if (string.IsNullOrEmpty(tpl))
             {
