@@ -1,8 +1,6 @@
 ﻿using DeviceStatusCheckerService.Models;
 using Rssdp;
-using System.Collections.Concurrent;
 using System.Net.NetworkInformation;
-using System.Text.RegularExpressions;
 
 namespace DeviceStatusCheckerService.Services
 {
@@ -31,6 +29,13 @@ namespace DeviceStatusCheckerService.Services
             _configuration = configuration;
             _deviceManager = deviceManager;
 
+            #region SSDP
+            var device = Helper.SsdpRootDevice(configuration);
+            File.WriteAllText(Path.Combine(hostingEnvironment.WebRootPath, "descriptiondocument.xml"), device.ToDescriptionDocument());
+            _Publisher = new SsdpDevicePublisher();
+            _Publisher.AddDevice(device);
+            #endregion
+
             try
             {
                 if (NetworkInterface.GetIsNetworkAvailable() &&
@@ -43,12 +48,15 @@ namespace DeviceStatusCheckerService.Services
                     if (timeout <= 0)
                         timeout = 60000;
                     _discoveryService = new DiscoveryService();
-                    _discoveryService.StartDiscovery(bindIp?.ToString() ?? "", OnDiscoveredDevice, timeout);
+                    _logger.LogInformation($"StartDiscovery: {bindIp?.ToString() ?? ""}");
+                    _discoveryService.StartDiscovery(bindIp?.ToString() ?? "", OnDiscoveredDevice, timeout, ThreadCancellationTokenSource.Token);
+                    _logger.LogInformation($"StartDiscovery: {bindIp?.ToString() ?? ""} - Done");
                 }
-
-                var devicesFile = _configuration.GetValue<string>("AppConfiguration:DefaultDeviceJsonPath");
-                if (!string.IsNullOrEmpty(devicesFile) && File.Exists(devicesFile))
-                    _deviceManager.LoadStaticDevices(devicesFile);
+                
+                // TODO: Load static devices from file
+                // var devicesFile = _configuration.GetValue<string>("AppConfiguration:DefaultDeviceJsonPath");
+                // if (!string.IsNullOrEmpty(devicesFile) && File.Exists(devicesFile))
+                //     _deviceManager.LoadStaticDevices(devicesFile);
             }
             catch (Exception ex)
             {
@@ -59,17 +67,24 @@ namespace DeviceStatusCheckerService.Services
 
             StreamTestThread = new Thread(new ThreadStart(StreamTestLoop));
             StreamTestThread.Start();
+        }
 
-            #region SSDP
-            var device = Helper.SsdpRootDevice(configuration);
-            File.WriteAllText(Path.Combine(hostingEnvironment.WebRootPath, "descriptiondocument.xml"), device.ToDescriptionDocument());
-            _Publisher = new SsdpDevicePublisher();
-            _Publisher.AddDevice(device);
-            #endregion
+        private string GetThumbnailPath(string uuid)
+        {
+            var thumbnailPath = _configuration.GetValue<string>("AppConfiguration:ThumbnailsPath")?.Trim();
+            if (string.IsNullOrEmpty(thumbnailPath))
+                thumbnailPath = Path.Combine(Path.GetTempPath(), "thumbnails");
+
+            thumbnailPath = Path.Combine(thumbnailPath, uuid);
+            if (!Directory.Exists(thumbnailPath))
+                Directory.CreateDirectory(thumbnailPath);
+
+            return thumbnailPath;
         }
 
         private async Task TryAddDevice(DeviceAvailableEventArgs e)
         {
+            _logger.LogDebug($"TryAddDevice: {e.DiscoveredDevice?.DescriptionLocation.AbsoluteUri}");
             try
             {
                 Uri? u;
@@ -96,54 +111,45 @@ namespace DeviceStatusCheckerService.Services
                                 if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
                                     continue;
 
-                                var ss = await Helper.GetStreamSetupsAsync($"{uu.Host}:{uu.Port}", user, pass);
-                                if (ss != null)
-                                {
-                                    dev.User = user;
-                                    dev.Password = pass;
-                                    dev.Streams = ss;
-                                    var dt = await Helper.GetSystemDateAndTimeAsync($"{uu.Host}:{uu.Port}", user, pass);
-                                    if (dt != null)
-                                    {
-                                        dev.TimeZone = dt.TimeZone.TZ;
-                                        if (dt.UTCDateTime != null)
-                                        {
-                                            dev.UTCDateTime = new DateTimeOffset(
-                                                dt.UTCDateTime.Date.Year,
-                                                dt.UTCDateTime.Date.Month,
-                                                dt.UTCDateTime.Date.Day,
-                                                dt.UTCDateTime.Time.Hour,
-                                                dt.UTCDateTime.Time.Minute,
-                                                dt.UTCDateTime.Time.Second, TimeSpan.Zero).ToUnixTimeMilliseconds();
-                                        }
-                                        if (dt.LocalDateTime != null)
-                                        {
-                                            dev.LocalDateTime = new DateTimeOffset(
-                                                dt.LocalDateTime.Date.Year,
-                                                dt.LocalDateTime.Date.Month,
-                                                dt.LocalDateTime.Date.Day,
-                                                dt.LocalDateTime.Time.Hour,
-                                                dt.LocalDateTime.Time.Minute,
-                                                dt.LocalDateTime.Time.Second, TimeSpan.Zero).ToUnixTimeMilliseconds();
-                                        }
-                                        dev.DateTimeType = dt.DateTimeType.ToString();
-                                        dev.DaylightSavings = dt.DaylightSavings;
-                                    }
-                                    break;
-                                }
+                                _logger.LogDebug($"Try auth: {uu.Host}:{uu.Port} [{user}, {pass}]");
+                                var streamSetups = await Helper.GetStreamInformationAsync($"{uu.Host}:{uu.Port}", user, pass);
+                                if (streamSetups == null)
+                                    continue;
+
+                                // Set the first auth that works
+                                dev.User = user;
+                                dev.Password = pass;
+                                _logger.LogInformation($"Try auth: {uu.Host}:{uu.Port} [{user}, {pass}] - Done");
+
+                                // Set the first stream setup that works
+                                dev.Streams = streamSetups;
+
+                                // Set the first system date and time that works
+                                var dt = await Helper.GetSystemDateAndTimeAsync($"{uu.Host}:{uu.Port}", user, pass);
+                                dev.TimeZone = dt.TimeZone.TZ;
+                                dev.DateTimeType = dt.DateTimeType.ToString();
+                                dev.DaylightSavings = dt.DaylightSavings;
+                                dev.UTCDateTime = Helper.GetDateTimeOffset(dt.UTCDateTime).ToUnixTimeMilliseconds();
+                                dev.LocalDateTime = Helper.GetDateTimeOffset(dt.LocalDateTime).ToUnixTimeMilliseconds();
+
+                                break;
                             };
+                        }
+                        else
+                        {
+                            _logger.LogError($"TryAddDevice: {e.DiscoveredDevice?.DescriptionLocation.AbsoluteUri} - Invalid PresentationURL");
                         }
                     }
                     catch (Exception err)
                     {
-                        _logger.LogError($"GetStreamSetups [{dev.PresentationURL}, {dev}] {err}");
+                        _logger.LogError($"GetStreamSetups [{dev.PresentationURL}, {dev}] {err.Message}");
                     }
                     _deviceManager.TryAddOrUpdateDevice(dev);
                 }
             }
             catch (Exception err)
             {
-                _logger.LogError($"FillInfos [{e?.DiscoveredDevice?.DescriptionLocation.AbsoluteUri}] {err}");
+                _logger.LogError($"FillInfos [{e?.DiscoveredDevice?.DescriptionLocation.AbsoluteUri}] {err.Message}");
             }
         }
 
@@ -151,10 +157,9 @@ namespace DeviceStatusCheckerService.Services
         {
             if (!e.IsNewlyDiscovered)
                 return;
-            _ = Task.Run(() => TryAddDevice(e));
+            _logger.LogDebug($"Discovered Device: {e.DiscoveredDevice?.DescriptionLocation.AbsoluteUri}");
+            _ = Task.Run(() => TryAddDevice(e), ThreadCancellationTokenSource.Token);
         }
-
-        private ConcurrentDictionary<string, (int, long)> _tryTimes = new ConcurrentDictionary<string, (int, long)>();
 
         private void StreamTestLoop()
         {
@@ -175,24 +180,11 @@ namespace DeviceStatusCheckerService.Services
                                 continue;
                             }
 
-                            if (string.IsNullOrEmpty(stream.URI))
+                            if (string.IsNullOrEmpty(stream.SnapshotUri))
                             {
                                 _logger.LogTrace($"Skip empty URI");
                                 continue;
                             }
-
-                            if (_tryTimes.TryGetValue(device.UUID, out (int, long) time))
-                            {
-                                if ((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time.Item2 < 15000))
-                                {
-                                    _logger.LogInformation($"Skip trial stream testing. {device.IP} [{stream.URI}]");
-                                    continue;
-                                }
-                            }
-
-                            var tmpLink = stream.URI;
-                            if (!Regex.Match(stream.URI, @"^rtsp:\/\/(?:[^@]*@)").Success)
-                                tmpLink = stream.URI.Replace("rtsp://", $"rtsp://{device.User}:{device.Password}@");
 
                             try
                             {
@@ -204,20 +196,33 @@ namespace DeviceStatusCheckerService.Services
                                 if (!Directory.Exists(thumbnailPath))
                                     Directory.CreateDirectory(thumbnailPath);
 
-                                var thumbnailFilePath = Path.Combine(thumbnailPath, $"stream_{linkId}__%01d.jpeg");
-                                if (!File.Exists(thumbnailFilePath.Replace("%01d", "1")))
+                                var thumbnailFilePath = Path.Combine(thumbnailPath, $"stream_{linkId}.jpeg");
+                                FileInfo fi = new FileInfo(thumbnailFilePath);
+                                if (fi.Exists && fi.CreationTimeUtc.AddMinutes(1) > DateTime.UtcNow)
                                 {
-                                    var streamTestResp = Helper.StreamTest(tmpLink, thumbnailFilePath);
-                                    if (streamTestResp.Item1 > 0)
-                                        throw new Exception($"Test stream: '{tmpLink}' => [{streamTestResp.Item1}] {streamTestResp.Item2}");
-                                    _logger.LogInformation($"Test stream: '{tmpLink}' => [{streamTestResp.Item1}] {streamTestResp.Item2}");
+                                    _logger.LogTrace($"Skip trial stream for recent thumbnail.");
+                                    device.Streams[linkId].Status = StreamStatus.OK;
+                                    continue;
                                 }
-                                device.Streams[linkId].Status = StreamStatus.OK;
+
+                                var tmpLink = stream.SnapshotUri.Replace("http://", $"http://{device.User}:{device.Password}@");
+                                try
+                                {
+                                    _logger.LogDebug($"StreamTest: {device.IP} [{tmpLink}]");
+                                    var data = Helper.GetSnapshotAsync(tmpLink, device.User, device.Password, ThreadCancellationTokenSource.Token);
+                                    File.WriteAllBytes(thumbnailFilePath, data.Result);
+                                    device.Streams[linkId].Status = StreamStatus.OK;
+                                    _logger.LogDebug($"StreamTest: {device.IP} [{tmpLink}] - Done");
+                                }
+                                catch (Exception err)
+                                {
+                                    _logger.LogError($"StreamTest: {device.IP} [{tmpLink}] {err.Message}");
+                                    device.Streams[linkId].Status = StreamStatus.ERROR;
+                                }
                             }
                             catch (Exception err)
                             {
-                                _logger.LogError($"{err}");
-                                _tryTimes[device.UUID] = (linkId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                                _logger.LogError($"ThumbnailsPath: {err.Message}");
                                 device.Streams[linkId].Status = StreamStatus.ERROR;
                             }
 
@@ -227,9 +232,9 @@ namespace DeviceStatusCheckerService.Services
                     });
                 }
 
-                _logger.LogInformation($"[{Thread.CurrentThread.ManagedThreadId}] ---------------------- Stream Test Loop end ------------------");
+                _logger.LogDebug($"[{Thread.CurrentThread.ManagedThreadId}] ---------------------- Stream Test Loop end ------------------");
                 GC.Collect();
-                Thread.Sleep(15000);
+                Thread.Sleep(60000);
             }
         }
 
@@ -237,6 +242,7 @@ namespace DeviceStatusCheckerService.Services
         {
             while (!ThreadCancellationTokenSource.IsCancellationRequested)
             {
+                _logger.LogDebug($"[{Thread.CurrentThread.ManagedThreadId}] ---------------------- Ping Loop start ------------------");
                 foreach (var device in _deviceManager.Devices)
                 {
                     ThreadPool.QueueUserWorkItem(w =>
@@ -247,9 +253,9 @@ namespace DeviceStatusCheckerService.Services
                     });
                 }
 
-                _logger.LogInformation($"[{Thread.CurrentThread.ManagedThreadId}] ---------------------- Ping Loop end ------------------");
+                _logger.LogDebug($"[{Thread.CurrentThread.ManagedThreadId}] ---------------------- Ping Loop end ------------------");
                 GC.Collect();
-                Thread.Sleep(5000);
+                Thread.Sleep(30000);
             }
         }
 

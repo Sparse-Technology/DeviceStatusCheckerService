@@ -1,10 +1,8 @@
 ﻿using DeviceStatusCheckerService.Models;
-using Microsoft.Extensions.Configuration;
 using Rssdp;
-using System;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.NetworkInformation;
+using System.Text;
 using System.Xml;
 
 namespace DeviceStatusCheckerService.Services
@@ -32,43 +30,67 @@ namespace DeviceStatusCheckerService.Services
             }
         };
 
+        public static DateTimeOffset GetDateTimeOffset(Onvif.Core.Client.Common.DateTime dateTime) =>
+             new DateTimeOffset(dateTime.Date.Year, dateTime.Date.Month, dateTime.Date.Day,
+                                dateTime.Time.Hour, dateTime.Time.Minute, dateTime.Time.Second, TimeSpan.Zero);
+
         public static async Task<Onvif.Core.Client.Common.SystemDateTime> GetSystemDateAndTimeAsync(string ip, string user, string password)
         {
             var deviceCli = await Onvif.Core.Client.OnvifClientFactory.CreateDeviceClientAsync(ip, user, password);
             return await deviceCli.GetSystemDateAndTimeAsync();
         }
 
-        public static async Task<List<StreamSetup>?> GetStreamSetupsAsync(string ip, string user, string password)
+        public static async Task<byte[]> GetSnapshotAsync(string snapshotUri, string user, string pass, CancellationToken cancellationToken = default)
         {
-            var list = new List<StreamSetup>();
+            var auth = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pass}"));
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
+            var byteArray = await httpClient.GetByteArrayAsync(snapshotUri, cancellationToken);
+            return byteArray;
+        }
+
+        public static async Task<byte[]> GetSnapshotAsync(string snapshotUri, CancellationToken cancellationToken = default)
+        {
+            var httpClient = new HttpClient();
+            var byteArray = await httpClient.GetByteArrayAsync(snapshotUri, cancellationToken);
+            return byteArray;
+        }
+
+        public static async Task<List<StreamSetup>?> GetStreamInformationAsync(string ep, string user, string password)
+        {
+            List<StreamSetup> list = new List<StreamSetup>();
             try
             {
-                var mediaCli = await Onvif.Core.Client.OnvifClientFactory.CreateMediaClientAsync(ip, user, password);
+                var mediaCli = await Onvif.Core.Client.OnvifClientFactory.CreateMediaClientAsync(ep, user, password);
                 var profiles = await mediaCli.GetProfilesAsync();
 
                 foreach (var profile in profiles.Profiles)
                 {
-                    if ((profile.VideoEncoderConfiguration == null) ||
-                        (profile.VideoEncoderConfiguration.Encoding != Onvif.Core.Client.Common.VideoEncoding.H264))
-                        continue;
-
-                    var streamUri = await mediaCli.GetStreamUriAsync(rtspStreamSetup, profile.token);
-                    list.Add(new StreamSetup()
+                    try
                     {
-                        Name = $"{profile.Name}_{profile.token}",
-                        URI = streamUri.Uri,
-                        Status = StreamStatus.UNKNOWN,
-                        CodecType = profile.VideoEncoderConfiguration.Encoding.ToString(),
-                        Resolution = new System.Drawing.Size(profile.VideoEncoderConfiguration.Resolution.Width, profile.VideoEncoderConfiguration.Resolution.Height),
-                    });
+                        var streamUri = await mediaCli.GetStreamUriAsync(rtspStreamSetup, profile.token);
+                        var snapshotUri = await mediaCli.GetSnapshotUriAsync(profile.token);
+
+                        list.Add(new StreamSetup()
+                        {
+                            Name = profile.Name,
+                            URI = streamUri.Uri,
+                            SnapshotUri = snapshotUri.Uri,
+                            Status = StreamStatus.UNKNOWN,
+                            CodecType = profile.VideoEncoderConfiguration.Encoding.ToString(),
+                            Resolution = new System.Drawing.Size(profile.VideoEncoderConfiguration.Resolution.Width, profile.VideoEncoderConfiguration.Resolution.Height),
+                        });
+
+                        Console.WriteLine($"--- Add stream to {ep}: {profile.Name} ({profile.token})");
+                    }
+                    catch { }
                 }
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"({ip}, {user}, {password}): {e}");
+                Console.WriteLine($"Error: {ep}, {user}, {password} => {e.Message}");
                 return null;
             }
-
             return list;
         }
 
@@ -124,11 +146,11 @@ namespace DeviceStatusCheckerService.Services
             return pingable;
         }
 
-        internal static void FillInfos(DeviceModel dev, HttpClient _httpClient)
+        internal static void FillInfos(DeviceModel dev, HttpClient _httpClient, CancellationToken cancellationToken = default)
         {
             try
             {
-                string xmlData = _httpClient.GetStringAsync(dev.DescriptionLocation).Result;
+                string xmlData = _httpClient.GetStringAsync(dev.DescriptionLocation, cancellationToken).Result;
 
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.LoadXml(xmlData);

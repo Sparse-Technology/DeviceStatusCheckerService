@@ -23,6 +23,7 @@ namespace DeviceStatusCheckerService.Models
         public string URI { get; set; } = "";
         public string CodecType { get; set; } = "";
         public Size Resolution { get; set; } = new Size(0, 0);
+        public string SnapshotUri { get; set; } = "";
     }
 
     public class DeviceModel

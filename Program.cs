@@ -61,7 +61,7 @@ if (!interfaces.Where(i => i.Name == networkInterface).Any())
     const int ERROR_BAD_ARGUMENTS = 0xA0;
     Environment.Exit(ERROR_BAD_ARGUMENTS);
 }
-Console.WriteLine($"Using configuration: {builder.Configuration.GetDebugView()}");
+// Console.WriteLine($"Using configuration: {builder.Configuration.GetDebugView()}");
 #endregion
 
 builder.Services.AddSingleton<DeviceManager>();

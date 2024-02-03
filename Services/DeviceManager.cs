@@ -67,7 +67,7 @@ namespace DeviceStatusCheckerService.Services
                 device.UUID = BitConverter.ToString(Encoding.UTF8.GetBytes(device.IP));
                 _Devices.TryAdd(device.UUID, device);
 
-                _logger.LogWarning($"Added new device: {device.IP}");
+                _logger.LogDebug($"Added new device: {device.IP}");
             }
             else
             {
