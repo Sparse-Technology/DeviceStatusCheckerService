@@ -3,12 +3,8 @@ import "highlight.js/styles/intellij-light.css";
 import { Tooltip, Toast, Popover } from "bootstrap";
 import fontawesome from "@fortawesome/fontawesome-free/js/all.js";
 import hljs from "highlight.js";
-// import "@yaireo/tagify/dist/tagify.css";
-// import Tagify from "@yaireo/tagify";
 import { CustomTagify } from "./CustomTagify.js";
 import { jsonrepair } from "jsonrepair";
-
-console.log("DeviceManagement.js loaded");
 
 export default class DeviceManagement {
     //GLOBAL VARIABLES
@@ -111,14 +107,37 @@ export default class DeviceManagement {
         "data-name": "modal-create-device-container",
     });
 
-    constructor(containerId, model) {
+    constructor(containerId) {
         this.#containerId = containerId;
-        this.#model = model;
-        this.initElements();
-        this.initBehaviours();
-        this.initDocumentReadyBehaviours();
-        this.setupExportButtonMode();
+        this.fetchDeviceData()
+            .then(() => {
+                this.initElements();
+                this.initBehaviours();
+                this.initDocumentReadyBehaviours();
+                this.setupExportButtonMode();
+            })
+            .catch((error) => {
+                console.error("Error fetching data:", error);
+            });
     }
+
+    fetchDeviceData() {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: "http://localhost/api/Device/ListDevices",
+                type: "GET",
+                dataType: "json",
+                success: (data) => {
+                    this.#model = data;
+                    resolve();
+                },
+                error: (error) => {
+                    reject(error);
+                },
+            });
+        });
+    }
+
     //METHODS
     initElements() {
         this.createNavbarElements();
@@ -132,7 +151,6 @@ export default class DeviceManagement {
         // this.createPublishDeviceModal();
         this.createCameraCardsBody();
 
-        //new CustomTagify(this.#filterInput, `[dataFilter]:visible`);
         new CustomTagify("#tagify-filter-bar", `[dataFilter]:visible`);
     }
 
@@ -143,7 +161,6 @@ export default class DeviceManagement {
 
     //NAVBAR ELEMENTS CREATION
     createNavbarElements() {
-        const self = this;
         // Navbar container
         this.#navbarContainer = $("<div>").attr(
             "data-name",
@@ -401,7 +418,7 @@ export default class DeviceManagement {
 
         // Dynamic Keys Property Creation
         // (Note: This part will depend on actual property names and may need adjustments)
-        for (let property of Object.getOwnPropertyNames(jsonModel[0])) {
+        for (let property of Object.getOwnPropertyNames(this.#model[0])) {
             const propertyColumn = $("<div>").addClass(
                 "col-sm-12 col-xl-6 mb-1"
             );
@@ -1389,7 +1406,6 @@ export default class DeviceManagement {
             }),
             contentType: "application/json",
             success: function (res) {
-                console.log("Success", res);
                 this.notificate(
                     "notif",
                     "Publish successful.",
@@ -1478,11 +1494,9 @@ export default class DeviceManagement {
                     );
                 });
         } else {
-            // Use the 'out of viewport hidden text area' trick
+            // Trick used here
             const textArea = document.createElement("textarea");
             textArea.value = this.#jsonStringCopy;
-
-            // Move textarea out of the viewport so it's not visible
             textArea.style.position = "absolute";
             textArea.style.left = "-999999px";
 
@@ -1530,99 +1544,3 @@ export default class DeviceManagement {
         }, 2500);
     }
 }
-
-// export class CustomTagify {
-//     constructor(inputTargetSelector, searchedElementsSelector) {
-//         this.inputTargetSelector = inputTargetSelector;
-//         this.searchWordsArray = [];
-//         this.searchedElementsSelector = searchedElementsSelector;
-
-//         var inputBar = document.querySelector(inputTargetSelector),
-//             // Initialize tagify to an object
-//             tagify = new Tagify(inputBar, {
-//                 whitelist: this.extractStateUniqueWords(
-//                     searchedElementsSelector
-//                 ),
-//                 placeholder: "Filter",
-//                 enforceWhitelist: false,
-//             });
-
-//         this.tagify = tagify; // Assign tagify to the instance property
-
-//         this.tagify.on(`add`, this.onTagAdded.bind(this));
-//         this.tagify.on(`remove`, this.onTagRemoved.bind(this));
-
-//         // Change here: Use a regular function instead of an arrow function
-//         inputBar.addEventListener(
-//             "keyup",
-//             function () {
-//                 this.filterPageTagify(
-//                     inputBar.value,
-//                     '[data-card="container"]:visible'
-//                 );
-//             }.bind(this)
-//         );
-//     }
-
-//     extractStateUniqueWords(searchedElementsSelector) {
-//         var words = new Set();
-//         $(searchedElementsSelector).each(function () {
-//             var dataFilterText = $(this).text().toLowerCase().trim();
-//             words.add(dataFilterText);
-//         });
-//         return Array.from(words);
-//     }
-
-//     filterPageTagify(filterString, selector) {
-//         var filter = filterString.toLowerCase();
-//         console.log(filter);
-
-//         if (filter.length <= 1 && filter.length > 0) {
-//             return;
-//         } else {
-//             $(selector).filter(function () {
-//                 $(this).toggle($(this).text().toLowerCase().includes(filter));
-//             });
-//         }
-//     }
-
-//     onTagAdded(e) {
-//         const addedTag = e.detail.data.value;
-//         this.searchWordsArray.push(addedTag);
-
-//         this.searchWordsArray.forEach((filterString) =>
-//             this.filterPageTagify(
-//                 filterString,
-//                 '[data-card="container"]:visible'
-//             )
-//         );
-
-//         this.tagify.whitelist = this.extractStateUniqueWords(
-//             this.searchedElementsSelector
-//         );
-//     }
-
-//     onTagRemoved(e) {
-//         const removedTag = e.detail.data.value;
-
-//         const index = this.searchWordsArray.findIndex(
-//             (tag) => tag === removedTag
-//         );
-
-//         if (index !== -1) {
-//             this.searchWordsArray.splice(index, 1);
-//         }
-
-//         if (this.searchWordsArray.length === 0) {
-//             $('[data-card="container"]').show();
-//         } else {
-//             this.searchWordsArray.forEach((filterString) =>
-//                 this.filterPageTagify(filterString, '[data-card="container"]')
-//             );
-//         }
-
-//         this.tagify.whitelist = this.extractStateUniqueWords(
-//             this.searchedElementsSelector
-//         );
-//     }
-// }
