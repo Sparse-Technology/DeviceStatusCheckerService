@@ -804,6 +804,7 @@ export default class DeviceManagement {
             .append(this.createDeviceInfo("Hostname: ", dev.hostname))
             .append(this.createDeviceInfo("Serial Number: ", dev.serialNumber))
             .append(this.createDeviceInfo("Friendly Name: ", dev.friendlyName))
+            .append(this.createDeviceInfo("Manufacturer: ", dev.manufacturer))
             .append(this.createDeviceInfo("Model: ", dev.model))
             .append(
                 this.createDeviceInfo("Location: ", dev.descriptionLocation)
@@ -889,7 +890,7 @@ export default class DeviceManagement {
         const thumbnailContainer = $("<div>").addClass(
             "d-flex justify-content-between"
         );
-        const imagePathRelative = `./thumbnails/${dev.uuid}/stream_0__1.jpeg`;
+        const imagePathRelative = `./thumbnails/${dev.uuid}/stream_0.jpeg`;
 
         const thumbnailImage = $("<img>")
             .attr({
