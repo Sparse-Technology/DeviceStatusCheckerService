@@ -30,9 +30,14 @@ namespace DeviceStatusCheckerService.Services
             }
         };
 
-        public static DateTimeOffset GetDateTimeOffset(Onvif.Core.Client.Common.DateTime dateTime) =>
-             new DateTimeOffset(dateTime.Date.Year, dateTime.Date.Month, dateTime.Date.Day,
+        public static DateTimeOffset GetDateTimeOffset(Onvif.Core.Client.Common.DateTime dateTime)
+        {
+            if (dateTime == null || dateTime.Date == null || dateTime.Time == null)
+                return DateTimeOffset.MinValue;
+
+            return new DateTimeOffset(dateTime.Date.Year, dateTime.Date.Month, dateTime.Date.Day,
                                 dateTime.Time.Hour, dateTime.Time.Minute, dateTime.Time.Second, TimeSpan.Zero);
+        }
 
         public static async Task<Onvif.Core.Client.Common.SystemDateTime> GetSystemDateAndTimeAsync(string ip, string user, string password)
         {
