@@ -61,6 +61,90 @@ namespace DeviceStatusCheckerService.Services
             return byteArray;
         }
 
+        private static Dictionary<string, Onvif.Core.Client.Ptz.PTZClient> devicePtzCliMap = new Dictionary<string, Onvif.Core.Client.Ptz.PTZClient>();
+
+        private static Onvif.Core.Client.Ptz.PTZClient? GetPTZClient(string ep, string user, string password)
+        {
+            if (string.IsNullOrEmpty(ep) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(password))
+                return null;
+
+            string key = $"{ep}:{user}:{password}";
+            if (devicePtzCliMap.ContainsKey(key))
+                return devicePtzCliMap[key];
+
+            var ptzCli = Onvif.Core.Client.OnvifClientFactory.CreatePTZClientAsync(ep, user, password).Result;
+            devicePtzCliMap.Add(key, ptzCli);
+            return ptzCli;
+        }
+
+        public static async Task<bool> GoToPTZHomeAsync(string ep, string user, string password, string profileToken, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var ptzCli = GetPTZClient(ep, user, password);
+                if (ptzCli == null)
+                    return false;
+                await ptzCli.GotoHomePositionAsync(profileToken, null);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {ep}, {user}, {password} => {e.Message}");
+                return false;
+            }
+        }
+
+        public static async Task<bool> CheckDevicePTZSupportAsync(string ep, string user, string password)
+        {
+            var deviceCli = await Onvif.Core.Client.OnvifClientFactory.CreateDeviceClientAsync(ep, user, password);
+            var caps = await deviceCli.GetCapabilitiesAsync(new[] { Onvif.Core.Client.Common.CapabilityCategory.PTZ });
+            return caps.Capabilities.PTZ != null;
+        }
+
+        public static async Task<string[]> GetOnvifProfilesAsync(string ep, string user, string password)
+        {
+            var mediaCli = await Onvif.Core.Client.OnvifClientFactory.CreateMediaClientAsync(ep, user, password);
+            var profiles = await mediaCli.GetProfilesAsync();
+            return profiles.Profiles.Select(p => p.token).ToArray();
+        }
+
+        public static async Task<bool> PTZContinuousMoveAsync(
+            string ep, string user, string password,
+            string profileToken, Onvif.Core.Client.Common.PTZSpeed velocity,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var ptzCli = GetPTZClient(ep, user, password);
+                if (ptzCli == null)
+                    return false;
+                var response = await ptzCli.ContinuousMoveAsync(profileToken, velocity, null);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {ep}, {user}, {password} => {e.Message}");
+                return false;
+            }
+        }
+
+        public static async Task<bool> PTZStopAsync(string ep, string user, string password, string profileToken, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var ptzCli = GetPTZClient(ep, user, password);
+                if (ptzCli == null)
+                    return false;
+                await ptzCli.StopAsync(profileToken, true, true);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {ep}, {user}, {password} => {e.Message}");
+                return false;
+            }
+        }
+
         public static async Task<List<StreamSetup>?> GetStreamInformationAsync(string ep, string user, string password)
         {
             List<StreamSetup> list = new List<StreamSetup>();
