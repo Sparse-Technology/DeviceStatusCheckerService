@@ -20,6 +20,8 @@ namespace DeviceStatusCheckerService.Services
         private DiscoveryService? _discoveryService;
         private DeviceManager _deviceManager;
 
+        private List<LoginUserModel> loginUsers = new List<LoginUserModel>();
+
         public CheckerService(ILogger<CheckerService> logger, IConfiguration configuration,
             IWebHostEnvironment hostingEnvironment,
             HttpClient httpClient, DeviceManager deviceManager)
@@ -34,6 +36,20 @@ namespace DeviceStatusCheckerService.Services
             File.WriteAllText(Path.Combine(hostingEnvironment.WebRootPath, "descriptiondocument.xml"), device.ToDescriptionDocument());
             _Publisher = new SsdpDevicePublisher();
             _Publisher.AddDevice(device);
+            #endregion
+
+            #region Load login users
+            foreach (var c in _configuration.GetSection("AppConfiguration:EstimatedAuths").GetChildren())
+            {
+                var user = c.GetValue<string>("user");
+                var pass = c.GetValue<string>("pass");
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
+                    continue;
+
+                loginUsers.Add(new LoginUserModel() { user = user, pass = pass });
+
+                _logger.LogDebug($"Add estimated login user: {user}");
+            }
             #endregion
 
             try
@@ -67,6 +83,27 @@ namespace DeviceStatusCheckerService.Services
 
             StreamTestThread = new Thread(new ThreadStart(StreamTestLoop));
             StreamTestThread.Start();
+        }
+
+        public void SetLoginUsers(List<LoginUserModel> users)
+        {
+            // Return if no users
+            if (users == null || users.Count == 0)
+                return;
+
+            foreach (var user in users)
+            {
+                // Skip empty user or pass
+                if (string.IsNullOrEmpty(user.user) || string.IsNullOrEmpty(user.pass))
+                    continue;
+
+                // Skip if already exists
+                if (loginUsers.Any(x => x.user == user.user && x.pass == user.pass))
+                    continue;
+
+                // Add new user
+                loginUsers.Add(user);
+            }
         }
 
         private string GetThumbnailPath(string uuid)
@@ -104,12 +141,16 @@ namespace DeviceStatusCheckerService.Services
                         Uri? uu;
                         if (Uri.TryCreate(dev.PresentationURL, UriKind.Absolute, out uu))
                         {
-                            foreach (var c in _configuration.GetSection("AppConfiguration:EstimatedAuths").GetChildren())
+                            foreach (var c in loginUsers)
                             {
-                                var user = c.GetValue<string>("user");
-                                var pass = c.GetValue<string>("pass");
-                                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
+                                if (c == null || c.user == null || c.pass == null)
                                     continue;
+
+                                if (string.IsNullOrEmpty(c.user) || string.IsNullOrEmpty(c.pass))
+                                    continue;
+
+                                var user = c.user;
+                                var pass = c.pass;
 
                                 _logger.LogDebug($"Try auth: {uu.Host}:{uu.Port} [{user}, {pass}]");
                                 var streamSetups = await Helper.GetStreamInformationAsync($"{uu.Host}:{uu.Port}", user, pass);
